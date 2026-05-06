@@ -1,24 +1,26 @@
 # HA Dashboard Builder - Project Roadmap
 
-## Phase 1: Backend Stabilization & Dockerization
+### Phase 1: Backend Stabilization & Dockerization ✅ COMPLETE
 **Goal:** A reliable, containerized API that passes all tests and is ready for production deployment.
 
-### Epic 1.1: Test Fixes & Validation
-- [ ] **Activity 1.1.1:** Fix `conftest.py` to add project root to `sys.path` so imports resolve correctly.
-- [ ] **Activity 1.1.2:** Update `test_ha_client.py` mocks to handle async context managers (`async with`) properly using `AsyncMock`.
-- [ ] **Activity 1.1.3:** Fix `test_websocket.py` streaming mock (ensure generator yields correctly).
-- [ ] **Activity 1.1.4:** Run full test suite (`pytest -v`) and verify 100% pass rate.
+#### Epic 1.1: Test Fixes & Validation ✅ DONE
+- [x] **Activity 1.1.1:** Fix `conftest.py` to add project root to `sys.path` so imports resolve correctly.
+- [x] **Activity 1.1.2:** Update `test_ha_client.py` mocks to handle async context managers (`async with`) properly using `AsyncMock`.
+- [x] **Activity 1.1.3:** Fix `test_websocket.py` streaming mock (ensure generator yields correctly).
+- [x] **Activity 1.1.4:** Run full test suite (`pytest -v`) and verify 100% pass rate — **56/56 tests passing**.
 
-### Epic 1.2: API Hardening & Security
-- [ ] **Activity 1.2.1:** Migrate Pydantic `class Config` to `model_config = ConfigDict()` (Pydantic v2).
-- [ ] **Activity 1.2.2:** Implement global exception handler middleware (catch raw exceptions, return JSON error responses instead of 500 traces).
-- [ ] **Activity 1.2.3:** Add Bearer Token authentication (simple API key check via header) to protect endpoints.
-- [ ] **Activity 1.2.4:** Implement rate limiting (using `slowapi` or similar) to prevent HA overload from rapid polling.
+#### Epic 1.2: API Hardening & Security ✅ DONE
+- [x] **Activity 1.2.1:** Migrate Pydantic `class Config` to `model_config = ConfigDict()` (Pydantic v2).
+- [x] **Activity 1.2.2:** Implement global exception handler middleware (catch raw exceptions, return JSON error responses instead of 500 traces).
+- [x] **Activity 1.2.3:** Add Bearer Token authentication (simple API key check via header) to protect endpoints.
+- [ ] **Activity 1.2.4:** Implement rate limiting (using `slowapi` or similar) to prevent HA overload from rapid polling — *deferred to Phase 3*.
 
-### Epic 1.3: Dockerization & Deployment Configs
-- [ ] **Activity 1.3.1:** Create multi-stage `Dockerfile` (builder stage with `uv`, runtime stage with slim Python image).
-- [ ] **Activity 1.3.2:** Create `docker-compose.yml` with a working example connecting to a local HA instance.
-- [ ] **Activity 1.3.3:** Add `.env.example` documenting all required environment variables (`HA_URL`, `HA_TOKEN`, etc.).
+#### Epic 1.3: Dockerization & Deployment Configs ✅ DONE
+- [x] **Activity 1.3.1:** Create multi-stage `Dockerfile` (builder stage with `uv`, runtime stage with slim Python image).
+- [x] **Activity 1.3.2:** Create `docker-compose.yml` with a working example connecting to a local HA instance.
+- [x] **Activity 1.3.3:** Add `.env.example` documenting all required environment variables (`HA_URL`, `HA_TOKEN`, etc.).
+
+**Phase 1 Summary:** All critical fixes complete, test suite stable (56/56 passing), API hardened with auth + exception handling, Docker deployment ready.
 
 ---
 
