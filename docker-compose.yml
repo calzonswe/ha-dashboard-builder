@@ -1,0 +1,53 @@
+# ---------------------------------------------------------------------------
+# Docker Compose for HA Dashboard Builder
+# ---------------------------------------------------------------------------
+# Connects to a local Home Assistant instance and exposes:
+#   - REST API on port 8000
+#   - WebSocket endpoint at ws://localhost:8000/ws
+# ---------------------------------------------------------------------------
+
+services:
+  ha-dashboard-api:
+    build: .
+    container_name: ha-dashboard-api
+    ports:
+      - "8000:8000"
+    environment:
+      # Home Assistant connection (override with your own values)
+      - HA_INTEGRATION_HA_URL=http://host.docker.internal:8123
+      - HA_INTEGRATION_HA_TOKEN=${HA_TOKEN}
+      - HA_INTEGRATION_API_KEY=${HA_INTEGRATION_API_KEY:-your-api-key-here}
+
+      # Server settings
+      - HA_INTEGRATION_HOST=0.0.0.0
+      - HA_INTEGRATION_PORT=8000
+
+      # Cache / polling settings
+      - HA_INTEGRATION_CACHE_TTL_SECONDS=60
+      - HA_INTEGRATION_CACHE_REFRESH_INTERVAL=300
+
+      # HA client timeouts & retries
+      - HA_INTEGRATION_HA_TIMEOUT=10.0
+      - HA_INTEGRATION_HA_MAX_RETRIES=3
+      - HA_INTEGRATION_HA_RETRY_DELAY=1.0
+
+      # WebSocket keepalive settings
+      - HA_INTEGRATION_WS_PING_INTERVAL=30.0
+      - HA_INTEGRATION_WS_PING_TIMEOUT=10.0
+
+    volumes:
+      # Persist the SQLite cache across container restarts
+      - ./cache.db:/app/cache.db:rw
+
+    # Use host networking on Linux so host.docker.internal is reachable
+    network_mode: host
+
+    # Restart automatically unless explicitly stopped
+    restart: unless-stopped
+
+    # Health check (inherited from Dockerfile HEALTHCHECK)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
