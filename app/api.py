@@ -3,12 +3,14 @@
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Literal, Optional, Set
 
 import aiohttp
 import uvicorn
-from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from app.config import settings
@@ -210,6 +212,84 @@ class WebSocketManager:
 
 
 # ---------------------------------------------------------------------------
+# Authentication Middleware – Bearer token check (only active if API key is set)
+# ---------------------------------------------------------------------------
+
+
+class AuthMiddleware:
+    """Simple Bearer token authentication middleware.
+
+    Only enforces auth when HA_INTEGRATION_API_KEY environment variable is set.
+    Health endpoint (/api/health and /health) is always exempt.
+    """
+
+    def __init__(self, app: FastAPI) -> None:
+        self.app = app
+
+    async def __call__(self, scope, receive, send) -> None:
+        # Always allow health checks through
+        if scope["type"] == "http":
+            path = scope.get("path", "")
+            if path.startswith("/health") or path.startswith("/api/health"):
+                await self.app(scope, receive, send)
+                return
+
+        api_key = os.getenv("HA_INTEGRATION_API_KEY")
+        if not api_key:
+            # No API key configured — allow all requests through
+            await self.app(scope, receive, send)
+            return
+
+        # Check Authorization header from scope headers
+        headers = {}
+        for key, value in scope.get("headers", []):
+            if isinstance(key, bytes):
+                key = key.decode()
+            if isinstance(value, bytes):
+                value = value.decode()
+            headers[key.lower()] = value
+
+        auth_header = headers.get("authorization", "")
+        if not auth_header.startswith("Bearer "):
+            response_body = json.dumps(
+                {"detail": "Missing or invalid authorization header"}
+            ).encode()
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 401,
+                    "headers": [
+                        (b"content-type", b"application/json"),
+                        (b"content-length", str(len(response_body)).encode()),
+                    ],
+                }
+            )
+            await send({"type": "http.response.body", "body": response_body})
+            return
+
+        token = auth_header[7:]  # Remove "Bearer " prefix
+        if token != api_key:
+            response_body = json.dumps(
+                {"detail": "Invalid API key"}
+            ).encode()
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 403,
+                    "headers": [
+                        (b"content-type", b"application/json"),
+                        (b"content-length", str(len(response_body)).encode()),
+                    ],
+                }
+            )
+            await send({"type": "http.response.body", "body": response_body})
+            return
+
+        # Auth passed — forward to the app
+        await self.app(scope, receive, send)
+
+
+# ---------------------------------------------------------------------------
 # Module-level state for the event pipeline
 # ---------------------------------------------------------------------------
 
@@ -308,6 +388,27 @@ def create_app(
             _sse_stop_event.set()
         await event_subscriber.stop()
         await ha_client.close()
+
+    # ------------------------------------------------------------------
+    # Global exception handlers – return clean JSON errors instead of 500 traces
+    # ------------------------------------------------------------------
+
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(request, exc):  # type: ignore[asyncio]
+        """Handle HTTP exceptions and preserve the original status code."""
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+        )
+
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request, exc):  # type: ignore[asyncio]
+        """Catch raw exceptions and return a clean JSON error response."""
+        logger.error(f"Unhandled exception: {exc}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error", "type": "internal_error"},
+        )
 
     # ------------------------------------------------------------------
     # REST endpoints (health, states)
@@ -506,6 +607,12 @@ def create_app(
                 "X-Accel-Buffering": "no",
             },
         )
+
+    # ------------------------------------------------------------------
+    # Authentication middleware – Bearer token check (only active if API key is set)
+    # ------------------------------------------------------------------
+
+    app.add_middleware(AuthMiddleware)
 
     return app
 

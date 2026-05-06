@@ -1,10 +1,16 @@
 """Configuration module for HA Integration API."""
 
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     """Application settings with environment variable support."""
+
+    model_config = ConfigDict(
+        env_prefix="HA_INTEGRATION_",
+        case_sensitive=True,
+    )
 
     # Home Assistant connection
     ha_url: str = "http://localhost:8123"
@@ -24,10 +30,6 @@ class Settings(BaseSettings):
     # Server
     host: str = "0.0.0.0"
     port: int = 8000
-
-    class Config:
-        env_prefix = "HA_INTEGRATION_"
-        case_sensitive = True
 
 
 settings = Settings()
