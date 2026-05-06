@@ -1,0 +1,41 @@
+# ---------------------------------------------------------------------------
+# Dependencies
+# ---------------------------------------------------------------------------
+
+[project]
+name = "ha-dashboard-builder"
+version = "0.1.0"
+description = "Home Assistant Integration API with real-time state updates"
+requires-python = ">=3.9"
+
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "aiohttp",
+    "pydantic",
+    "pydantic-settings",
+]
+
+# ---------------------------------------------------------------------------
+# Test dependencies
+# ---------------------------------------------------------------------------
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "httpx",
+]
+
+# ---------------------------------------------------------------------------
+# pytest config
+# ---------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = "--strict-markers --tb=short -v"
