@@ -7,6 +7,8 @@ interface DashboardHeaderProps {
   loading: boolean
   onSave: () => void
   onPreview: () => void
+  onExport?: () => void
+  onImport?: () => void
 }
 
 const DOMAIN_ICONS: Record<string, string> = {
@@ -20,21 +22,47 @@ const DOMAIN_ICONS: Record<string, string> = {
   camera: '📷',
 }
 
+const DOMAIN_ICONS_MDI: Record<string, string> = {
+  light: 'lightbulb',
+  sensor: 'sensor',
+  switch: 'toggle-switch',
+  cover: 'window-shade',
+  fan: 'fan',
+  climate: 'thermostat',
+  media_player: 'music-note',
+  camera: 'camera',
+}
+
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   dashboard,
   loading,
   onSave,
   onPreview,
+  onExport,
+  onImport,
 }) => {
   const navigate = useNavigate()
   const [title, setTitle] = React.useState(dashboard?.title || '')
   const [isEditing, setIsEditing] = React.useState(false)
+  const [showExportMenu, setShowExportMenu] = React.useState(false)
+  const menuRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
     if (dashboard && dashboard.title !== title) {
       setTitle(dashboard.title)
     }
   }, [dashboard])
+
+  // Close export menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleTitleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,6 +95,38 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   const handleBack = useCallback(() => {
     navigate('/')
   }, [navigate])
+
+  // Collect entity domains for the info badge
+  const domainCounts: Record<string, number> = {}
+  React.useMemo(() => {
+    if (dashboard?.cards) {
+      for (const card of dashboard.cards) {
+        const parts = (card.entity_id || '').split('.')
+        const domain = parts[0] || 'unknown'
+        domainCounts[domain] = (domainCounts[domain] || 0) + 1
+      }
+    }
+  }, [dashboard?.cards])
+
+  // Pick the most common domain for icon
+  let bestDomain = 'home'
+  let bestCount = 0
+  for (const [domain, count] of Object.entries(domainCounts)) {
+    if (count > bestCount) {
+      bestCount = count
+      bestDomain = domain
+    }
+  }
+
+  const handleExportClick = useCallback(() => {
+    setShowExportMenu(false)
+    onExport?.()
+  }, [onExport])
+
+  const handleImportClick = useCallback(() => {
+    setShowExportMenu(false)
+    onImport?.()
+  }, [onImport])
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -109,18 +169,81 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               className="text-xl font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors truncate flex items-center gap-2"
               title="Click to edit title"
             >
-              {DOMAIN_ICONS[dashboard?.cards?.[0]?.entity_id?.split('.')?.[0] || ''] || '🏠'}{' '}
+              {DOMAIN_ICONS[bestDomain] || '🏠'}{' '}
               {loading ? 'Loading...' : dashboard?.title || 'Untitled Dashboard'}
             </h1>
           )}
 
-          {/* Entity count */}
-          <span className="hidden md:inline text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-            {dashboard?.cards?.length || 0} card{dashboard?.cards?.length !== 1 ? 's' : ''}
-          </span>
+          {/* Entity count + domain info */}
+          <div className="hidden md:flex items-center gap-2">
+            <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+              {dashboard?.cards?.length || 0} card{dashboard?.cards?.length !== 1 ? 's' : ''}
+            </span>
+            {Object.keys(domainCounts).length > 0 && (
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                {Object.entries(domainCounts)
+                  .slice(0, 3)
+                  .map(([domain]) => (
+                    <span key={domain} title={`${domain}: ${domainCounts[domain]} card(s)`}>
+                      {DOMAIN_ICONS_MDI[domain] ? `🏷️${domain}` : domain}
+                    </span>
+                  ))}
+              </div>
+            )}
+          </div>
 
           {/* Action buttons */}
           <div className="flex items-center gap-2">
+            {/* Export dropdown */}
+            {onExport && onImport && (
+              <div ref={menuRef} className="relative">
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  disabled={!dashboard || dashboard.cards.length === 0}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.293a1 1 0 011.414 0L9 10.586V7a1 1 0 112 0v3.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" />
+                  </svg>
+                  Export / Import
+                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+
+                {/* Dropdown menu */}
+                {showExportMenu && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50">
+                    {/* Export section */}
+                    <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Export</div>
+                    <button
+                      onClick={handleExportClick}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2"
+                    >
+                      📄 Export JSON
+                    </button>
+                    <button
+                      onClick={handleExportClick}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2"
+                    >
+                      📝 Export YAML
+                    </button>
+
+                    <div className="border-t border-gray-200 my-1" />
+
+                    {/* Import section */}
+                    <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Import</div>
+                    <button
+                      onClick={handleImportClick}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2"
+                    >
+                      📥 Import from HA
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             <button
               onClick={handlePreview}
               disabled={!dashboard || dashboard.cards.length === 0}

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { HAEntity, DashboardCard, CardConfig } from '../types/api'
+import { HAEntity, DashboardCard, CardConfig, DashboardConfig } from '../types/api'
 import { useDashboard } from '../hooks/useDashboard'
 import { useEntityStates } from '../hooks/useEntityStates'
 import { useEntities } from '../hooks/useEntities'
@@ -8,6 +8,8 @@ import DashboardHeader from '../components/DashboardHeader'
 import EntitySidebar from '../components/EntitySidebar'
 import DashboardCanvas from '../components/DashboardCanvas'
 import CardConfigModal from '../components/CardConfigModal'
+import ExportModal from '../components/ExportModal'
+import ImportModal from '../components/ImportModal'
 
 const DashboardView: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -35,6 +37,10 @@ const DashboardView: React.FC = () => {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<Error | null>(null)
 
+  // Export/Import modal state
+  const [exportModalOpen, setExportModalOpen] = useState(false)
+  const [importModalOpen, setImportModalOpen] = useState(false)
+
   // ─── Save handler ────────────────────────────────────────────────
 
   const handleSave = useCallback(async () => {
@@ -53,6 +59,39 @@ const DashboardView: React.FC = () => {
     if (!id) return
     window.open(`/preview/${id}`, '_blank')
   }, [id])
+
+  // ─── Export/Import handlers ──────────────────────────────────────
+
+  const handleExport = useCallback(() => {
+    setExportModalOpen(true)
+  }, [])
+
+  const handleImport = useCallback(() => {
+    setImportModalOpen(true)
+  }, [])
+
+  const handleConfirmImport = useCallback(
+    (importedDashboard: DashboardConfig) => {
+      // Create a new dashboard from the imported config
+      // The backend will assign an ID when saved
+      const newDashboard: DashboardConfig = {
+        ...importedDashboard,
+        id: undefined,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      // Save cards to the server (creates a new dashboard)
+      if (newDashboard.cards.length > 0) {
+        saveCards(newDashboard.cards).then(() => {
+          // The hook will refetch and update dashboard state automatically
+        })
+      }
+
+      setImportModalOpen(false)
+    },
+    [saveCards],
+  )
 
   // ─── Card management ─────────────────────────────────────────────
 
@@ -131,6 +170,8 @@ const DashboardView: React.FC = () => {
         loading={saving || isLoading}
         onSave={handleSave}
         onPreview={handlePreview}
+        onExport={handleExport}
+        onImport={handleImport}
       />
 
       {/* Error banner */}
@@ -163,6 +204,20 @@ const DashboardView: React.FC = () => {
         card={cards.find((c) => c.id === selectedCardId) || null}
         entities={availableEntities}
         onSave={handleSaveCardConfig}
+      />
+
+      {/* Export modal */}
+      <ExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        dashboard={dashboard}
+      />
+
+      {/* Import modal */}
+      <ImportModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onImport={handleConfirmImport}
       />
     </div>
   )
