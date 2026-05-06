@@ -35,6 +35,7 @@ const DashboardList: React.FC = () => {
       navigate(`/dashboard/${newDashboard.id}`)
     } catch (err) {
       console.error('Failed to create dashboard:', err)
+      setError(err instanceof Error ? err.message : 'Failed to create dashboard')
     }
   }
 
@@ -45,6 +46,7 @@ const DashboardList: React.FC = () => {
       setDashboards((prev) => prev.filter((d) => d.id !== id))
     } catch (err) {
       console.error('Failed to delete dashboard:', err)
+      setError(err instanceof Error ? err.message : 'Failed to delete dashboard')
     }
   }
 
@@ -106,7 +108,7 @@ const DashboardList: React.FC = () => {
           {dashboards.map((dashboard) => (
             <div
               key={dashboard.id}
-              className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow cursor-pointer group"
+              className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow cursor-pointer group relative"
               onClick={() => handleEdit(dashboard.id || '')}
             >
               <div className="flex items-start justify-between mb-3">
@@ -141,7 +143,7 @@ const DashboardList: React.FC = () => {
               </div>
 
               {/* Hover overlay */}
-              <div className="absolute inset-0 bg-blue-50/0 group-hover:bg-blue-50/30 rounded-lg transition-colors" />
+              <div className="absolute inset-0 bg-blue-50/0 group-hover:bg-blue-50/30 rounded-lg transition-colors pointer-events-none" />
             </div>
           ))}
         </div>

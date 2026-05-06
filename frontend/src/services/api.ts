@@ -31,6 +31,23 @@ export async function getStateById(entityId: string): Promise<HAState> {
   return fetchJSON<HAState>(`${API_BASE}/states/${entityId}`)
 }
 
+/** Get the current state of a single entity (returns null if not found) */
+export async function getEntityState(entityId: string): Promise<HAState | null> {
+  try {
+    const result = await fetchJSON<{ entities?: HAState[] }>(`${API_BASE}/states`)
+    const entity = result.entities?.find((e) => e.entity_id === entityId)
+    return entity || null
+  } catch {
+    // Fall back to the single-entity endpoint
+    try {
+      const state = await getStateById(entityId)
+      return state
+    } catch {
+      return null
+    }
+  }
+}
+
 export async function getEntities(): Promise<HAEntity[]> {
   const states = await getStates()
   return states.map((s) => ({
@@ -67,11 +84,18 @@ export async function updateDashboard(
   config: Partial<DashboardConfig>,
 ): Promise<DashboardConfig> {
   return fetchJSON<DashboardConfig>(`${API_BASE}/dashboards/${id}`, {
-    method: 'PATCH',
+    method: 'PUT',
     body: JSON.stringify(config),
   })
 }
 
 export async function deleteDashboard(id: string): Promise<void> {
   await fetch(`${API_BASE}/dashboards/${id}`, { method: 'DELETE' })
+}
+
+// ─── SSE / Real-time Events ────────────────────────────────────────
+
+/** Returns the URL for the SSE events stream endpoint */
+export function getEventsStreamUrl(): string {
+  return `${API_BASE}/events/stream`
 }
