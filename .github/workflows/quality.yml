@@ -1,0 +1,92 @@
+name: Code Quality Checks
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    name: Run code quality checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------------------
+      # Python formatting check (black)
+      # ------------------------------------------------------------------
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip dependencies
+        id: cache-pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-black-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-black-
+
+      - name: Install black
+        run: pip install black
+
+      - name: Check Python formatting (black)
+        id: black-check
+        run: |
+          if [ "$(find . -name '*.py' ! -path './.venv/*' ! -path './node_modules/*' | wc -l)" -gt 0 ]; then
+            black --check --diff app/ tests/ conftest.py 2>/dev/null || { echo "::warning::Black formatting issues found."; exit 1; }
+          else
+            echo "No Python files to check."
+          fi
+        continue-on-error: false
+
+      # ------------------------------------------------------------------
+      # TypeScript / JavaScript linting (ESLint)
+      # ------------------------------------------------------------------
+      - name: Setup Node.js for linting
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+        continue-on-error: false
+
+      - name: Run ESLint (if configured)
+        id: eslint-check
+        working-directory: ./frontend
+        run: |
+          if [ -f "eslint.config.js" ] || ls .eslintrc* &>/dev/null; then
+            npx eslint src/ --ext .ts,.tsx --max-warnings=0
+          else
+            echo "::warning::No ESLint configuration found — skipping lint step."
+          fi
+        continue-on-error: true
+
+      # ------------------------------------------------------------------
+      # YAML / JSON syntax validation (no external tools needed)
+      # ------------------------------------------------------------------
+      - name: Validate YAML files
+        id: yaml-check
+        run: |
+          errors=0
+          for f in .github/workflows/*.yml; do
+            python3 -c "import yaml; yaml.safe_load(open('$f'))" 2>/dev/null || { echo "::error::Invalid YAML: $f"; ((errors++)); }
+          done
+          if [ "$errors" -gt 0 ]; then exit 1; fi
+
+      - name: Validate JSON files (package.json, tsconfig.json)
+        id: json-check
+        run: |
+          errors=0
+          for f in frontend/package.json frontend/tsconfig.json pyproject.toml; do
+            if [ -f "$f" ]; then
+              python3 -c "import json; json.load(open('$f'))" 2>/dev/null || { echo "::error::Invalid JSON: $f"; ((errors++)); }
+            fi
+          done
+          if [ "$errors" -gt 0 ]; then exit 1; fi
