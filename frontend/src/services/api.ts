@@ -21,6 +21,8 @@ async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
   return response.json() as Promise<T>
 }
 
+// ─── Home Assistant States / Entities ────────────────────────────────
+
 export async function getStates(): Promise<HAState[]> {
   return fetchJSON<HAState[]>(`${API_BASE}/states`)
 }
@@ -41,11 +43,19 @@ export async function getEntities(): Promise<HAEntity[]> {
   }))
 }
 
+// ─── Dashboard CRUD ────────────────────────────────────────────────
+
+export async function getDashboards(): Promise<DashboardConfig[]> {
+  return fetchJSON<DashboardConfig[]>(`${API_BASE}/dashboards`)
+}
+
 export async function getDashboard(id: string): Promise<DashboardConfig> {
   return fetchJSON<DashboardConfig>(`${API_BASE}/dashboards/${id}`)
 }
 
-export async function createDashboard(config: Omit<DashboardConfig, 'id'>): Promise<DashboardConfig> {
+export async function createDashboard(
+  config: Omit<DashboardConfig, 'id'>,
+): Promise<DashboardConfig> {
   return fetchJSON<DashboardConfig>(`${API_BASE}/dashboards`, {
     method: 'POST',
     body: JSON.stringify(config),
