@@ -1,0 +1,275 @@
+"""Dashboard and widget CRUD API routes (Phase 4).
+
+Provides endpoints for creating, listing, and managing dashboards
+and their associated widgets/cards.
+"""
+
+from typing import List
+
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+
+from app.database import get_db, Page, Card
+from .schemas import (
+    DashboardCreateRequest,
+    DashboardUpdateRequest,
+    DashboardResponse,
+    DashboardListResponse,
+    WidgetCreateRequest,
+    WidgetResponse,
+    WidgetListResponse,
+    FullDashboardResponse,
+)
+
+router = APIRouter()
+
+
+# ------------------------------------------------------------------
+# Dashboard (Page) CRUD
+# ------------------------------------------------------------------
+
+
+@router.get("/dashboards", response_model=DashboardListResponse)
+def list_dashboards(db: Session = Depends(get_db)):
+    """Return all dashboards.
+
+    GET /api/v1/dashboards -> 200 { "dashboards": [...], "count": N }
+    """
+    pages = db.query(Page).order_by(Page.created_at.desc()).all()
+    dashboards = [
+        DashboardResponse(
+            id=page.id,
+            name=page.name or "",
+            description=None,  # Page model doesn't have a description field yet
+        )
+        for page in pages
+    ]
+    return DashboardListResponse(dashboards=dashboards, count=len(dashboards))
+
+
+@router.post("/dashboards", response_model=DashboardResponse, status_code=201)
+def create_dashboard(req: DashboardCreateRequest, db: Session = Depends(get_db)):
+    """Create a new dashboard.
+
+    POST /api/v1/dashboards -> 201 { "id": N, "name": "...", ... }
+    """
+    from app.database import init_db
+    init_db()  # Ensure tables exist
+
+    page = Page(name=req.name, description=req.description or "")
+    db.add(page)
+    db.commit()
+    db.refresh(page)
+    return DashboardResponse(id=page.id, name=page.name or "", description=page.description if page.description != "" else None)
+
+
+@router.put("/dashboards/{dashboard_id}", response_model=DashboardResponse)
+def update_dashboard(dashboard_id: int, req: DashboardUpdateRequest, db: Session = Depends(get_db)):
+    """Update an existing dashboard.
+
+    PUT /api/v1/dashboards/1 -> 200 { "id": 1, "name": "...", ... }
+    """
+    page = db.query(Page).filter(Page.id == dashboard_id).first()
+    if not page:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    if req.name is not None:
+        page.name = req.name
+    if req.description is not None:
+        page.description = req.description
+    db.commit()
+    db.refresh(page)
+    return DashboardResponse(id=page.id, name=page.name or "", description=page.description if page.description != "" else None)
+
+
+@router.get("/dashboards/{dashboard_id}", response_model=FullDashboardResponse)
+def get_dashboard(dashboard_id: int, db: Session = Depends(get_db)):
+    """Return a single dashboard with all its widgets.
+
+    GET /api/v1/dashboards/1 -> 200 { "id": 1, "name": "...", "cards": [...] }
+    """
+    page = db.query(Page).filter(Page.id == dashboard_id).first()
+    if not page:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    cards = (
+        db.query(Card)
+        .filter(Card.page_id == dashboard_id)
+        .order_by(Card.y, Card.x)
+        .all()
+    )
+    widgets = [
+        WidgetResponse(
+            id=card.id,
+            page_id=card.page_id or 0,
+            card_type=card.card_type or "",
+            entity_id=card.entity_id if card.entity_id != "" else None,
+            title=card.title if card.title != "" else None,
+            config=card.config or {},
+            x=card.x or 0,
+            y=card.y or 0,
+            width=card.width or 1,
+            height=card.height or 1,
+        )
+        for card in cards
+    ]
+
+    return FullDashboardResponse(
+        id=page.id,
+        name=page.name or "",
+        description=None,
+        cards=widgets,
+    )
+
+
+# ------------------------------------------------------------------
+# Widget (Card) CRUD
+# ------------------------------------------------------------------
+
+
+@router.get("/dashboards/{dashboard_id}/widgets", response_model=WidgetListResponse)
+def list_widgets(dashboard_id: int, db: Session = Depends(get_db)):
+    """Return all widgets on a dashboard.
+
+    GET /api/v1/dashboards/1/widgets -> 200 { "widgets": [...], "count": N }
+    """
+    page = db.query(Page).filter(Page.id == dashboard_id).first()
+    if not page:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    cards = (
+        db.query(Card)
+        .filter(Card.page_id == dashboard_id)
+        .order_by(Card.y, Card.x)
+        .all()
+    )
+    widgets = [
+        WidgetResponse(
+            id=card.id,
+            page_id=card.page_id or 0,
+            card_type=card.card_type or "",
+            entity_id=card.entity_id if card.entity_id != "" else None,
+            title=card.title if card.title != "" else None,
+            config=card.config or {},
+            x=card.x or 0,
+            y=card.y or 0,
+            width=card.width or 1,
+            height=card.height or 1,
+        )
+        for card in cards
+    ]
+    return WidgetListResponse(widgets=widgets, count=len(widgets))
+
+
+@router.post("/dashboards/{dashboard_id}/widgets", response_model=WidgetResponse, status_code=201)
+def create_widget(dashboard_id: int, req: WidgetCreateRequest, db: Session = Depends(get_db)):
+    """Add a widget to a dashboard.
+
+    POST /api/v1/dashboards/1/widgets -> 201 { "id": N, ... }
+    """
+    page = db.query(Page).filter(Page.id == dashboard_id).first()
+    if not page:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    card = Card(
+        page_id=dashboard_id,
+        card_type=req.card_type,
+        entity_id=req.entity_id or "",
+        title=req.title or "",
+        config=req.config or {},
+        x=req.x,
+        y=req.y,
+        width=req.width,
+        height=req.height,
+    )
+    db.add(card)
+    db.commit()
+    db.refresh(card)
+
+    return WidgetResponse(
+        id=card.id,
+        page_id=card.page_id or 0,
+        card_type=card.card_type or "",
+        entity_id=card.entity_id if card.entity_id != "" else None,
+        title=card.title if card.title != "" else None,
+        config=card.config or {},
+        x=card.x or 0,
+        y=card.y or 0,
+        width=card.width or 1,
+        height=card.height or 1,
+    )
+
+
+@router.put("/dashboards/{dashboard_id}/widgets/{widget_id}", response_model=WidgetResponse)
+def update_widget(
+    dashboard_id: int, widget_id: int, req: WidgetCreateRequest, db: Session = Depends(get_db)
+):
+    """Update an existing widget.
+
+    PUT /api/v1/dashboards/1/widgets/1 -> 200 { ... }
+    """
+    card = (
+        db.query(Card)
+        .filter(Card.id == widget_id, Card.page_id == dashboard_id)
+        .first()
+    )
+    if not card:
+        raise HTTPException(status_code=404, detail="Widget not found")
+
+    card.card_type = req.card_type
+    card.entity_id = req.entity_id or ""
+    card.title = req.title or ""
+    card.config = req.config or {}
+    card.x = req.x
+    card.y = req.y
+    card.width = req.width
+    card.height = req.height
+    db.commit()
+    db.refresh(card)
+
+    return WidgetResponse(
+        id=card.id,
+        page_id=card.page_id or 0,
+        card_type=card.card_type or "",
+        entity_id=card.entity_id if card.entity_id != "" else None,
+        title=card.title if card.title != "" else None,
+        config=card.config or {},
+        x=card.x or 0,
+        y=card.y or 0,
+        width=card.width or 1,
+        height=card.height or 1,
+    )
+
+
+@router.delete("/dashboards/{dashboard_id}/widgets/{widget_id}", status_code=204)
+def delete_widget(dashboard_id: int, widget_id: int, db: Session = Depends(get_db)):
+    """Remove a widget from a dashboard.
+
+    DELETE /api/v1/dashboards/1/widgets/1 -> 204 (no content)
+    """
+    card = (
+        db.query(Card)
+        .filter(Card.id == widget_id, Card.page_id == dashboard_id)
+        .first()
+    )
+    if not card:
+        raise HTTPException(status_code=404, detail="Widget not found")
+
+    db.delete(card)
+    db.commit()
+
+
+@router.delete("/dashboards/{dashboard_id}", status_code=204)
+def delete_dashboard(dashboard_id: int, db: Session = Depends(get_db)):
+    """Delete a dashboard and all its widgets.
+
+    DELETE /api/v1/dashboards/1 -> 204 (no content)
+    """
+    page = db.query(Page).filter(Page.id == dashboard_id).first()
+    if not page:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    # Delete all cards on this page first
+    db.query(Card).filter(Card.page_id == dashboard_id).delete()
+    db.delete(page)
+    db.commit()
