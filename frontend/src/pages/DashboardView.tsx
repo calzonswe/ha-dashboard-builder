@@ -212,6 +212,7 @@ const DashboardView: React.FC = () => {
 
         {/* Config modal */}
         <CardConfigModal
+          key={selectedCardId || 'new'}
           isOpen={configModalOpen}
           onClose={() => setConfigModalOpen(false)}
           card={cards.find((c) => c.id === selectedCardId) || null}
