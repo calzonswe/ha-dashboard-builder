@@ -6,7 +6,7 @@
 name = "ha-dashboard-builder"
 version = "0.1.0"
 description = "Home Assistant Integration API with real-time state updates"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 dependencies = [
     "fastapi",
