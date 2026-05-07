@@ -66,11 +66,17 @@ def create_dashboard(req: DashboardCreateRequest, db: Session = Depends(get_db))
     db.add(page)
     db.commit()
     db.refresh(page)
-    return DashboardResponse(id=page.id, name=page.name or "", description=page.description if page.description != "" else None)
+    return DashboardResponse(
+        id=page.id,
+        name=page.name or "",
+        description=page.description if page.description != "" else None,
+    )
 
 
 @router.put("/dashboards/{dashboard_id}", response_model=DashboardResponse)
-def update_dashboard(dashboard_id: int, req: DashboardUpdateRequest, db: Session = Depends(get_db)):
+def update_dashboard(
+    dashboard_id: int, req: DashboardUpdateRequest, db: Session = Depends(get_db)
+):
     """Update an existing dashboard.
 
     PUT /api/v1/dashboards/1 -> 200 { "id": 1, "name": "...", ... }
@@ -86,7 +92,11 @@ def update_dashboard(dashboard_id: int, req: DashboardUpdateRequest, db: Session
     page.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(page)
-    return DashboardResponse(id=page.id, name=page.name or "", description=page.description if page.description != "" else None)
+    return DashboardResponse(
+        id=page.id,
+        name=page.name or "",
+        description=page.description if page.description != "" else None,
+    )
 
 
 @router.get("/dashboards/{dashboard_id}", response_model=FullDashboardResponse)
@@ -168,8 +178,12 @@ def list_widgets(dashboard_id: int, db: Session = Depends(get_db)):
     return WidgetListResponse(widgets=widgets, count=len(widgets))
 
 
-@router.post("/dashboards/{dashboard_id}/widgets", response_model=WidgetResponse, status_code=201)
-def create_widget(dashboard_id: int, req: WidgetCreateRequest, db: Session = Depends(get_db)):
+@router.post(
+    "/dashboards/{dashboard_id}/widgets", response_model=WidgetResponse, status_code=201
+)
+def create_widget(
+    dashboard_id: int, req: WidgetCreateRequest, db: Session = Depends(get_db)
+):
     """Add a widget to a dashboard.
 
     POST /api/v1/dashboards/1/widgets -> 201 { "id": N, ... }
@@ -207,9 +221,14 @@ def create_widget(dashboard_id: int, req: WidgetCreateRequest, db: Session = Dep
     )
 
 
-@router.put("/dashboards/{dashboard_id}/widgets/{widget_id}", response_model=WidgetResponse)
+@router.put(
+    "/dashboards/{dashboard_id}/widgets/{widget_id}", response_model=WidgetResponse
+)
 def update_widget(
-    dashboard_id: int, widget_id: int, req: CardUpdateRequest, db: Session = Depends(get_db)
+    dashboard_id: int,
+    widget_id: int,
+    req: CardUpdateRequest,
+    db: Session = Depends(get_db),
 ):
     """Update an existing widget (partial update — only provided fields change).
 
@@ -258,7 +277,9 @@ def update_widget(
 
 
 @router.put("/dashboards/{dashboard_id}/cards", response_model=CardsBulkUpdateResponse)
-def bulk_update_cards(dashboard_id: int, req: CardsBulkUpdateRequest, db: Session = Depends(get_db)):
+def bulk_update_cards(
+    dashboard_id: int, req: CardsBulkUpdateRequest, db: Session = Depends(get_db)
+):
     """Replace all cards (widgets) on a dashboard atomically.
 
     This is the primary save endpoint used by the frontend drag-and-drop builder.
@@ -375,9 +396,7 @@ def delete_widget(dashboard_id: int, widget_id: int, db: Session = Depends(get_d
         db.commit()
     except Exception:
         db.rollback()
-        raise HTTPException(
-            status_code=500, detail="Failed to delete widget"
-        )
+        raise HTTPException(status_code=500, detail="Failed to delete widget")
 
 
 @router.delete("/dashboards/{dashboard_id}", status_code=204)

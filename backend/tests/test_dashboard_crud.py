@@ -13,9 +13,7 @@ class TestDashboardCRUD:
 
     def test_create_dashboard(self):
         """POST /api/v1/dashboards -> 201 with created dashboard data."""
-        resp = TestClient(app).post(
-            "/api/v1/dashboards", json={"name": "Living Room"}
-        )
+        resp = TestClient(app).post("/api/v1/dashboards", json={"name": "Living Room"})
         assert resp.status_code == 201, f"Response: {resp.json()}"
         data = resp.json()
         assert data["id"] is not None
@@ -25,9 +23,7 @@ class TestDashboardCRUD:
         """Create multiple dashboards and verify they all exist."""
         names = ["Kitchen", "Bedroom", "Office"]
         for name in names:
-            resp = TestClient(app).post(
-                "/api/v1/dashboards", json={"name": name}
-            )
+            resp = TestClient(app).post("/api/v1/dashboards", json={"name": name})
             assert resp.status_code == 201
 
         # Verify all exist via list endpoint
@@ -51,9 +47,7 @@ class TestDashboardCRUD:
 
     def test_get_single_dashboard(self):
         """GET /api/v1/dashboards/{id} -> 200 with dashboard + empty cards."""
-        resp = TestClient(app).post(
-            "/api/v1/dashboards", json={"name": "Get Test"}
-        )
+        resp = TestClient(app).post("/api/v1/dashboards", json={"name": "Get Test"})
         assert resp.status_code == 201
         dashboard_id = resp.json()["id"]
 
@@ -71,9 +65,7 @@ class TestDashboardCRUD:
 
     def test_delete_dashboard(self):
         """DELETE /api/v1/dashboards/{id} -> 204 and verify removal."""
-        resp = TestClient(app).post(
-            "/api/v1/dashboards", json={"name": "Delete Me"}
-        )
+        resp = TestClient(app).post("/api/v1/dashboards", json={"name": "Delete Me"})
         assert resp.status_code == 201
         dashboard_id = resp.json()["id"]
 
@@ -91,9 +83,7 @@ class TestWidgetCRUD:
 
     def _create_dashboard(self):
         """Helper to create a dashboard and return its ID."""
-        resp = TestClient(app).post(
-            "/api/v1/dashboards", json={"name": "Widget Test"}
-        )
+        resp = TestClient(app).post("/api/v1/dashboards", json={"name": "Widget Test"})
         assert resp.status_code == 201
         return resp.json()["id"]
 
@@ -306,9 +296,7 @@ class TestWidgetGridConstraints:
     """Test that widget grid constraints are enforced."""
 
     def _create_dashboard(self):
-        resp = TestClient(app).post(
-            "/api/v1/dashboards", json={"name": "Grid Test"}
-        )
+        resp = TestClient(app).post("/api/v1/dashboards", json={"name": "Grid Test"})
         assert resp.status_code == 201
         return resp.json()["id"]
 

@@ -94,15 +94,23 @@ class HAEventListener:
             prev_state = previous.get("state", "")
 
             # Detect changes: state changed OR new entity appeared
-            if current_state_val != prev_state or entity_id not in self._previous_states:
-                changes.append({
-                    "entity_id": entity_id,
-                    "state": current_state_val,
-                    "attributes": attributes,
-                    "last_changed": state.get("last_changed_at"),
-                })
+            if (
+                current_state_val != prev_state
+                or entity_id not in self._previous_states
+            ):
+                changes.append(
+                    {
+                        "entity_id": entity_id,
+                        "state": current_state_val,
+                        "attributes": attributes,
+                        "last_changed": state.get("last_changed_at"),
+                    }
+                )
 
-            current_states[entity_id] = {"state": current_state_val, "attributes": attributes}
+            current_states[entity_id] = {
+                "state": current_state_val,
+                "attributes": attributes,
+            }
 
         # Update snapshot
         self._previous_states = current_states
