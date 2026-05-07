@@ -15,7 +15,7 @@ from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 # Database engine (SQLite)
 engine = create_engine("sqlite:///./ha_dashboard.db", connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=True, bind=engine)
+SessionLocal = sessionmaker(engine, autocommit=False, autoflush=True)
 Base = declarative_base()
 
 
