@@ -1,8 +1,18 @@
 """Database setup and SQLAlchemy models."""
 
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, JSON
+from datetime import datetime
+
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    JSON,
+    String,
+    create_engine,
+)
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import relationship, sessionmaker
 
 # Database engine (SQLite)
 engine = create_engine("sqlite:///./ha_dashboard.db", connect_args={"check_same_thread": False})
@@ -18,8 +28,12 @@ class Page(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)  # e.g., "Living Room", "Kitchen"
     description = Column(String, default="", nullable=True)  # Optional dashboard description
-    created_at = Column(String, default="")  # ISO timestamp as string
-    updated_at = Column(String, default="")  # ISO timestamp as string
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+    )
 
     # Relationship to cards on this page
     cards = relationship("Card", back_populates="page", cascade="all, delete-orphan")
@@ -56,7 +70,11 @@ class Entity(Base):
     name = Column(String, default="")
     state = Column(String, default="")
     attributes = Column(JSON, default=dict)  # Entity attributes as JSON
-    last_updated = Column(String, default="")
+    last_updated = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+    )
 
 
 # Initialize database tables

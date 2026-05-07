@@ -43,8 +43,8 @@ class EntityCache:
                 unit_of_measurement TEXT DEFAULT '',
                 device_id TEXT DEFAULT '',
                 area TEXT DEFAULT '',
-                last_changed TEXT DEFAULT '',
-                last_updated TEXT DEFAULT ''
+                last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """
         )
@@ -55,7 +55,7 @@ class EntityCache:
                 entity_id TEXT NOT NULL,
                 old_state TEXT DEFAULT '',
                 new_state TEXT NOT NULL,
-                changed_at TEXT DEFAULT '',
+                changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (entity_id) REFERENCES entities(entity_id)
             )
         """
