@@ -293,7 +293,7 @@ class EntityDiscoveryService:
 
         # 5. Build summary
         domains = set(e["domain"] for e in enriched) if enriched else set()
-        areas = set(e.get("area") or "" for e in enriched if e.get("area")) if enriched else set()
+        areas = set(e["area"] for e in enriched if e.get("area")) if enriched else set()
 
         status = "partial" if errors else "success"
 
