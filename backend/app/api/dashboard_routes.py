@@ -56,9 +56,6 @@ def create_dashboard(req: DashboardCreateRequest, db: Session = Depends(get_db))
 
     POST /api/v1/dashboards -> 201 { "id": N, "name": "...", ... }
     """
-    from app.database import init_db
-    init_db()  # Ensure tables exist
-
     page = Page(name=req.name, description=req.description or "")
     db.add(page)
     db.commit()
