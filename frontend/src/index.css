@@ -8,3 +8,130 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* ─── Mobile-first responsive styles ───────────────────────────── */
+
+/* Small phones (< 640px) */
+@media (max-width: 639px) {
+  .sidebar-canvas-container {
+    flex-direction: column;
+  }
+  
+  .entity-card {
+    min-height: 48px;
+    padding: 12px;
+  }
+
+  /* Make canvas scrollable on small screens */
+  #dashboard-canvas,
+  [data-testid="dashboard-canvas"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Tablets (640px - 768px) */
+@media (min-width: 640px) and (max-width: 767px) {
+  .sidebar-canvas-container {
+    flex-direction: column;
+  }
+
+  /* Compact sidebar on tablets */
+  aside {
+    width: 200px !important;
+  }
+}
+
+/* Desktop adjustments (> 1024px) */
+@media (min-width: 1025px) {
+  .sidebar-canvas-container {
+    flex-direction: row;
+  }
+}
+
+/* ─── Touch-friendly enhancements ──────────────────────────────── */
+
+/* Ensure minimum touch target sizes (44px per WCAG) */
+@media (pointer: coarse) {
+  button,
+  [role='button'],
+  .cursor-grab {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Larger tap targets for mobile */
+  .entity-card {
+    padding: 16px !important;
+  }
+}
+
+/* ─── PWA install prompt styling ───────────────────────────────── */
+
+.pwa-install-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: linear-gradient(135deg, #0f3460, #1a1a2e);
+  color: white;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.pwa-install-banner.hidden {
+  display: none;
+}
+
+/* ─── Mobile sidebar drawer animations ─────────────────────────── */
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+.mobile-drawer-open {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+.mobile-drawer-closed {
+  animation: slideDown 0.25s ease-in forwards;
+}
+
+/* ─── Responsive canvas grid columns ───────────────────────────── */
+
+.canvas-grid {
+  display: grid;
+  gap: 16px;
+}
+
+/* Mobile: single column */
+@media (max-width: 767px) {
+  .canvas-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tablet: two columns */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .canvas-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop: auto-fit based on available space */
+@media (min-width: 1024px) {
+  .canvas-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}

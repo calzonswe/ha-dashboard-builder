@@ -66,7 +66,7 @@ const EntityCard: React.FC<EntityCardProps> = ({ card, entityState, onConfigure 
       <div
         {...listeners}
         {...attributes}
-        className="absolute top-1 left-1 w-6 h-6 flex items-center justify-center rounded-full bg-white/80 hover:bg-white cursor-grab z-10"
+        className="absolute top-1 left-1 w-6 h-6 flex items-center justify-center rounded-full bg-white/80 hover:bg-white cursor-grab z-10 sm:hidden"
         style={{ touchAction: 'none' }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
@@ -75,10 +75,10 @@ const EntityCard: React.FC<EntityCardProps> = ({ card, entityState, onConfigure 
       </div>
 
       {/* Card content */}
-      <div className="p-3">
+      <div className="p-3 sm:p-4">
         {/* Header with icon and title */}
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-lg">{icon}</span>
+          <span className="text-lg flex-shrink-0">{icon}</span>
           <h3 className="font-medium text-sm truncate flex-1" title={card.entity_id}>
             {card.config?.title || card.entity_id.split('.').slice(1).join('.')}
           </h3>
@@ -99,14 +99,15 @@ const EntityCard: React.FC<EntityCardProps> = ({ card, entityState, onConfigure 
           {(card.config?.type || 'state').charAt(0).toUpperCase() + (card.config?.type || 'state').slice(1)}
         </span>
 
-        {/* Configure button */}
+        {/* Configure button - larger touch target on mobile */}
         <button
           onClick={(e) => {
             e.stopPropagation()
             onConfigure(card.id)
           }}
-          className="absolute bottom-2 right-2 p-1 rounded-full hover:bg-white/60 transition-colors"
+          className="absolute bottom-2 right-2 p-2 rounded-full hover:bg-white/60 transition-colors sm:p-1"
           title="Configure card"
+          aria-label={`Configure ${card.entity_id}`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
             <path d="M5.75 12a1.75 1.75 0 113.5 0 1.75 1.75 0 01-3.5 0zM10.75 8a1.75 1.75 0 103.5 0 1.75 1.75 0 00-3.5 0zM12.25 14.25a1.75 1.75 0 103.5 0 1.75 1.75 0 00-3.5 0z" />

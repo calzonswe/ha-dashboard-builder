@@ -5,6 +5,7 @@ import {
   useSensor,
   useSensors,
   PointerSensor,
+  TouchSensor,
 } from '@dnd-kit/core'
 import type {
   DragStartEvent,
@@ -41,11 +42,19 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({
   const [activeId, setActiveId] = React.useState<string | null>(null)
   const [dragPosition, setDragPosition] = React.useState<{ x: number; y: number }>({ x: 0, y: 0 })
 
-  // Sensors for drag interaction
+  // Detect if device supports touch for appropriate sensor configuration
+  const isTouchDevice = React.useMemo(() => {
+    return ('ontouchstart' in window || navigator.maxTouchPoints > 0)
+  }, [])
+
+  // Sensors for drag interaction - TouchSensor on touch devices, PointerSensor on desktop
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: { distance: 5 }, // require 5px movement before dragging starts
   })
-  const sensors = useSensors(pointerSensor)
+
+  const sensors = isTouchDevice
+    ? useSensors(useSensor(TouchSensor))
+    : useSensors(pointerSensor)
 
   /** Find the grid cell (x,y in grid units) from an activator event */
   function getGridPosition(activatorEvent: Event | null): { x: number; y: number } {
@@ -130,8 +139,8 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      {/* Canvas container */}
-      <div className="relative w-full overflow-auto bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 min-h-[480px]">
+      {/* Canvas container - responsive with scroll support */}
+      <div className="relative w-full overflow-auto bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 min-h-[480px] touch-pan-x touch-pan-y">
         {/* Grid background pattern */}
         <div
           className="relative"
@@ -175,13 +184,15 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({
             {/* Empty state */}
             {cards.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center p-8">
+                <div className="text-center p-8 sm:p-12">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 text-gray-300" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M5.5 16a3.5 3.5 0 110-7 3.5 3.5 0 010 7zM15 16a3.5 3.5 0 110-7 3.5 3.5 0 010 7z" />
                   </svg>
                   <h3 className="text-lg font-medium text-gray-500 mb-2">No cards yet</h3>
                   <p className="text-sm text-gray-400 max-w-xs mx-auto">
-                    Drag entities from the sidebar onto this canvas to start building your dashboard.
+                    {isTouchDevice
+                      ? 'Open the sidebar drawer and hold an entity to drag it onto this canvas.'
+                      : 'Drag entities from the sidebar onto this canvas to start building your dashboard.'}
                   </p>
                 </div>
               </div>

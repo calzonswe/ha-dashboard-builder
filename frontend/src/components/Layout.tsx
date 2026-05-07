@@ -7,14 +7,24 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b border-gray-200">
+      {/* Mobile-only top bar for non-dashboard pages */}
+      <nav className="bg-white shadow-sm border-b border-gray-200 sm:hidden">
+        <div className="max-w-full mx-auto px-4 h-14 flex items-center justify-between">
+          <h1 className="text-lg font-semibold text-gray-900 truncate">HA Dashboard Builder</h1>
+        </div>
+      </nav>
+
+      {/* Desktop nav */}
+      <nav className="hidden sm:block bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <h1 className="text-xl font-semibold text-gray-900">HA Dashboard Builder</h1>
           </div>
         </div>
       </nav>
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+      {/* Main content - responsive padding */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {children}
       </main>
     </div>

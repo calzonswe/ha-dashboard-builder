@@ -4,6 +4,8 @@ import { HAEntity, DashboardCard, CardConfig, DashboardConfig } from '../types/a
 import { useDashboard } from '../hooks/useDashboard'
 import { useEntityStates } from '../hooks/useEntityStates'
 import { useEntities } from '../hooks/useEntities'
+import ResponsiveLayout from '../components/ResponsiveLayout'
+import MobileSidebar from '../components/MobileSidebar'
 import DashboardHeader from '../components/DashboardHeader'
 import EntitySidebar from '../components/EntitySidebar'
 import DashboardCanvas from '../components/DashboardCanvas'
@@ -36,6 +38,7 @@ const DashboardView: React.FC = () => {
   const [configModalOpen, setConfigModalOpen] = useState(false)
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<Error | null>(null)
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
 
   // Export/Import modal state
   const [exportModalOpen, setExportModalOpen] = useState(false)
@@ -163,63 +166,74 @@ const DashboardView: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Header */}
-      <DashboardHeader
-        dashboard={dashboard}
-        loading={saving || isLoading}
-        onSave={handleSave}
-        onPreview={handlePreview}
-        onExport={handleExport}
-        onImport={handleImport}
-      />
+    <ResponsiveLayout>
+      <div className="flex flex-col h-screen">
+        {/* Header */}
+        <DashboardHeader
+          dashboard={dashboard}
+          loading={saving || isLoading}
+          onSave={handleSave}
+          onPreview={handlePreview}
+          onExport={handleExport}
+          onImport={handleImport}
+        />
 
-      {/* Error banner */}
-      {hasError && (
-        <div className="mx-4 mt-2 bg-red-50 border border-red-300 rounded-md p-3 text-sm text-red-700">
-          {saveError ? `Save failed: ${saveError.message}` : dashboardError?.message}
+        {/* Error banner */}
+        {hasError && (
+          <div className="mx-4 mt-2 bg-red-50 border border-red-300 rounded-md p-3 text-sm text-red-700">
+            {saveError ? `Save failed: ${saveError.message}` : dashboardError?.message}
+          </div>
+        )}
+
+        {/* Main content: sidebar + canvas */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Desktop/tablet sidebar (hidden on mobile) */}
+          <aside className="hidden sm:block w-72 flex-shrink-0">
+            <EntitySidebar entities={availableEntities} />
+          </aside>
+
+          {/* Canvas area - full width on mobile, flexible on desktop */}
+          <main className="flex-1 p-4 overflow-auto bg-gray-50 min-w-0">
+            <DashboardCanvas
+              cards={cards}
+              entityStates={entityStatesMap}
+              onCardsChange={handleCardsChange}
+              onConfigureCard={handleConfigureCard}
+            />
+          </main>
         </div>
-      )}
 
-      {/* Main content: sidebar + canvas */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <EntitySidebar entities={availableEntities} />
+        {/* Mobile sidebar bottom drawer (visible only on mobile) */}
+        <MobileSidebar 
+          isOpen={isMobileSidebarOpen} 
+          onClose={() => setIsMobileSidebarOpen(false)}
+          entities={availableEntities}
+        />
 
-        {/* Canvas area */}
-        <main className="flex-1 p-4 overflow-auto bg-gray-50">
-          <DashboardCanvas
-            cards={cards}
-            entityStates={entityStatesMap}
-            onCardsChange={handleCardsChange}
-            onConfigureCard={handleConfigureCard}
-          />
-        </main>
+        {/* Config modal */}
+        <CardConfigModal
+          isOpen={configModalOpen}
+          onClose={() => setConfigModalOpen(false)}
+          card={cards.find((c) => c.id === selectedCardId) || null}
+          entities={availableEntities}
+          onSave={handleSaveCardConfig}
+        />
+
+        {/* Export modal */}
+        <ExportModal
+          isOpen={exportModalOpen}
+          onClose={() => setExportModalOpen(false)}
+          dashboard={dashboard}
+        />
+
+        {/* Import modal */}
+        <ImportModal
+          isOpen={importModalOpen}
+          onClose={() => setImportModalOpen(false)}
+          onImport={handleConfirmImport}
+        />
       </div>
-
-      {/* Config modal */}
-      <CardConfigModal
-        isOpen={configModalOpen}
-        onClose={() => setConfigModalOpen(false)}
-        card={cards.find((c) => c.id === selectedCardId) || null}
-        entities={availableEntities}
-        onSave={handleSaveCardConfig}
-      />
-
-      {/* Export modal */}
-      <ExportModal
-        isOpen={exportModalOpen}
-        onClose={() => setExportModalOpen(false)}
-        dashboard={dashboard}
-      />
-
-      {/* Import modal */}
-      <ImportModal
-        isOpen={importModalOpen}
-        onClose={() => setImportModalOpen(false)}
-        onImport={handleConfirmImport}
-      />
-    </div>
+    </ResponsiveLayout>
   )
 }
 
