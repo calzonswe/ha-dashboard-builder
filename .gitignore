@@ -1,2 +1,33 @@
 node_modules/
 dist/
+
+# Environment files (may contain HA tokens)
+.env
+.env.local
+.env.*
+
+# SQLite database files (contain sensitive tokens and dashboard configs)
+*.db
+*.sqlite
+*.sqlite3
+ha_dashboard.db
+
+# IDE / editor config that may contain project secrets
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Python cache
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+
+# Build artifacts
+*.egg-info/
