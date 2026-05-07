@@ -13,7 +13,7 @@ router = APIRouter()
 # Strict Home Assistant entity_id format: domain.object_name
 # Only lowercase letters, digits, underscores, and hyphens allowed.
 # Domain must be 1-32 chars, object name up to 64 chars.
-ENTITY_ID_PATTERN = re.compile(r'^[a-z][a-z0-9_-]{0,32}\.[a-z_][a-z0-9_-]{0,64}$')
+ENTITY_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_-]{0,32}\.[a-z_][a-z0-9_-]{0,64}$")
 
 
 def validate_entity_id(entity_id: str) -> bool:
@@ -38,14 +38,18 @@ class ConnectionManager:
         await websocket.accept()
         self.active_connections.append(websocket)
         self.subscriptions[websocket] = set()
-        logger.info(f"WebSocket connected. Total connections: {len(self.active_connections)}")
+        logger.info(
+            f"WebSocket connected. Total connections: {len(self.active_connections)}"
+        )
 
     def disconnect(self, websocket: WebSocket):
         """Remove a WebSocket connection."""
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
         self.subscriptions.pop(websocket, None)
-        logger.info(f"WebSocket disconnected. Total connections: {len(self.active_connections)}")
+        logger.info(
+            f"WebSocket disconnected. Total connections: {len(self.active_connections)}"
+        )
 
     async def broadcast(self, message: str):
         """Send a message to all connected clients."""
@@ -87,7 +91,9 @@ async def websocket_entities(websocket: WebSocket):
 
     try:
         # Send initial connection message
-        await websocket.send_json({"type": "connected", "message": "Connected to HA Dashboard WebSocket"})
+        await websocket.send_json(
+            {"type": "connected", "message": "Connected to HA Dashboard WebSocket"}
+        )
 
         # Keep the connection open and listen for messages
         while True:
@@ -100,26 +106,34 @@ async def websocket_entities(websocket: WebSocket):
                 # Client can subscribe to specific entity updates
                 raw_entity_id = data.split(":")[1]
                 if not validate_entity_id(raw_entity_id):
-                    await websocket.send_json({
-                        "type": "error",
-                        "message": f"Invalid entity_id format: {raw_entity_id}",
-                    })
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "message": f"Invalid entity_id format: {raw_entity_id}",
+                        }
+                    )
                     continue
                 manager.subscriptions[websocket].add(raw_entity_id)
                 logger.info(f"Client subscribed to {raw_entity_id}")
-                await websocket.send_json({"type": "subscribed", "entity_id": raw_entity_id})
+                await websocket.send_json(
+                    {"type": "subscribed", "entity_id": raw_entity_id}
+                )
             elif data.startswith("unsubscribe:"):
                 # Client can unsubscribe from specific entities
                 raw_entity_id = data.split(":")[1]
                 if not validate_entity_id(raw_entity_id):
-                    await websocket.send_json({
-                        "type": "error",
-                        "message": f"Invalid entity_id format: {raw_entity_id}",
-                    })
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "message": f"Invalid entity_id format: {raw_entity_id}",
+                        }
+                    )
                     continue
                 manager.subscriptions[websocket].discard(raw_entity_id)
                 logger.info(f"Client unsubscribed from {raw_entity_id}")
-                await websocket.send_json({"type": "unsubscribed", "entity_id": raw_entity_id})
+                await websocket.send_json(
+                    {"type": "unsubscribed", "entity_id": raw_entity_id}
+                )
             else:
                 # Echo back for now (can be extended for other commands)
                 await websocket.send_text(f"Received: {data}")

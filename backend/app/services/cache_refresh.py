@@ -27,7 +27,9 @@ class CacheRefreshService:
             return
 
         self._is_running = True
-        logger.info(f"Starting cache refresh service (interval: {self.interval_seconds}s)")
+        logger.info(
+            f"Starting cache refresh service (interval: {self.interval_seconds}s)"
+        )
 
         # Run in background task
         self._task = asyncio.create_task(self._refresh_loop())
@@ -59,9 +61,13 @@ class CacheRefreshService:
                 summary = await asyncio.to_thread(self.discovery_service.discover)
 
                 if summary["status"] == "success":
-                    logger.info(f"Cache refreshed successfully: {summary['total_entities']} entities")
+                    logger.info(
+                        f"Cache refreshed successfully: {summary['total_entities']} entities"
+                    )
                 else:
-                    logger.warning(f"Cache refresh had issues: {summary.get('errors', [])}")
+                    logger.warning(
+                        f"Cache refresh had issues: {summary.get('errors', [])}"
+                    )
 
                 # Wait for next interval
                 await asyncio.sleep(self.interval_seconds)

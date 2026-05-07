@@ -38,7 +38,10 @@ def get_ha_client() -> HAAPI:
 def get_entity_service() -> EntityDiscoveryService:
     """Dependency to get the current entity discovery service."""
     if _entity_service is None:
-        raise HTTPException(status_code=400, detail="Entity discovery not initialized. Connect to HA first.")
+        raise HTTPException(
+            status_code=400,
+            detail="Entity discovery not initialized. Connect to HA first.",
+        )
     return _entity_service
 
 
@@ -161,7 +164,9 @@ async def get_entity(entity_id: str):
         state = client.get_state(entity_id)
 
         if not state:
-            raise HTTPException(status_code=404, detail=f"Entity '{entity_id}' not found")
+            raise HTTPException(
+                status_code=404, detail=f"Entity '{entity_id}' not found"
+            )
 
         return CachedEntity(
             entity_id=state["entity_id"],

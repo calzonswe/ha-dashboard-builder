@@ -47,7 +47,9 @@ class TestHAAPI:
             mock_client_instance.request.return_value = mock_response
 
             # Setup context manager properly
-            MockClient.return_value.__enter__ = MagicMock(return_value=mock_client_instance)
+            MockClient.return_value.__enter__ = MagicMock(
+                return_value=mock_client_instance
+            )
             MockClient.return_value.__exit__ = MagicMock(return_value=False)
 
             result = api.test_connection()
@@ -61,9 +63,13 @@ class TestHAAPI:
 
         with patch("httpx.Client") as MockClient:
             mock_client_instance = MagicMock()
-            mock_client_instance.request.side_effect = httpx.ConnectError("Connection refused")
+            mock_client_instance.request.side_effect = httpx.ConnectError(
+                "Connection refused"
+            )
 
-            MockClient.return_value.__enter__ = MagicMock(return_value=mock_client_instance)
+            MockClient.return_value.__enter__ = MagicMock(
+                return_value=mock_client_instance
+            )
             MockClient.return_value.__exit__ = MagicMock(return_value=False)
 
             with pytest.raises(HAConnectionError):
@@ -86,7 +92,9 @@ class TestHAAPI:
             mock_client_instance.request.return_value = mock_response
 
             # Setup context manager properly
-            MockClient.return_value.__enter__ = MagicMock(return_value=mock_client_instance)
+            MockClient.return_value.__enter__ = MagicMock(
+                return_value=mock_client_instance
+            )
             MockClient.return_value.__exit__ = MagicMock(return_value=False)
 
             result = api.get_states()
@@ -111,7 +119,9 @@ class TestHAAPI:
             mock_client_instance.request.return_value = mock_response
 
             # Setup context manager properly
-            MockClient.return_value.__enter__ = MagicMock(return_value=mock_client_instance)
+            MockClient.return_value.__enter__ = MagicMock(
+                return_value=mock_client_instance
+            )
             MockClient.return_value.__exit__ = MagicMock(return_value=False)
 
             result = api.get_state("sensor.temperature")
@@ -132,7 +142,9 @@ class TestHAAPI:
             mock_client_instance.request.return_value = mock_response
 
             # Setup context manager properly
-            MockClient.return_value.__enter__ = MagicMock(return_value=mock_client_instance)
+            MockClient.return_value.__enter__ = MagicMock(
+                return_value=mock_client_instance
+            )
             MockClient.return_value.__exit__ = MagicMock(return_value=False)
 
             result = api.call_service("light", "turn_on", {"entity_id": "light.lamp"})

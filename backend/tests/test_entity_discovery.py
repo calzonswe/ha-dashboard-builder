@@ -99,7 +99,11 @@ class TestEntityCache:
                 "state": "20.0",
                 "attributes": {"friendly_name": "Living Room Temp"},
             },
-            {"entity_id": "sensor.bedroom_temp", "state": "18.5", "attributes": {"friendly_name": "Bedroom Temp"}},
+            {
+                "entity_id": "sensor.bedroom_temp",
+                "state": "18.5",
+                "attributes": {"friendly_name": "Bedroom Temp"},
+            },
         ]
 
         cache.refresh(states)
@@ -172,8 +176,18 @@ class TestEntityDiscoveryService:
         }
         # States now include device_id for enrichment tests
         client.get_states.return_value = [
-            {"entity_id": "sensor.temp", "state": "20.0", "attributes": {}, "device_id": "dev_001"},
-            {"entity_id": "light.lamp", "state": "on", "attributes": {}, "device_id": "dev_002"},
+            {
+                "entity_id": "sensor.temp",
+                "state": "20.0",
+                "attributes": {},
+                "device_id": "dev_001",
+            },
+            {
+                "entity_id": "light.lamp",
+                "state": "on",
+                "attributes": {},
+                "device_id": "dev_002",
+            },
         ]
         client.get_devices.return_value = []
         return client
@@ -222,7 +236,9 @@ class TestEntityDiscoveryService:
             {"id": "dev_002", "area_id": "bedroom"},
         ]
 
-        service = EntityDiscoveryService(ha_client=mock_ha_client, entity_cache=EntityCache(db_path=":memory:"))
+        service = EntityDiscoveryService(
+            ha_client=mock_ha_client, entity_cache=EntityCache(db_path=":memory:")
+        )
         service.discover()
 
         entities = service.get_cached_entities()
@@ -244,7 +260,9 @@ class TestEntityDiscoveryService:
 
         mock_ha_client.get_devices.side_effect = DeviceFetchError("Device fetch failed")
 
-        service = EntityDiscoveryService(ha_client=mock_ha_client, entity_cache=EntityCache(db_path=":memory:"))
+        service = EntityDiscoveryService(
+            ha_client=mock_ha_client, entity_cache=EntityCache(db_path=":memory:")
+        )
         summary = service.discover()
 
         # Status should still be "success" because device enrichment is optional

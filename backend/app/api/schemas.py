@@ -214,7 +214,9 @@ class ServiceCallRequest(BaseModel):
     )
     service_data: Optional[Dict[str, Any]] = Field(
         None,
-        description=("Optional data payload for the service call. Structure depends on the specific service."),
+        description=(
+            "Optional data payload for the service call. Structure depends on the specific service."
+        ),
         examples=[{"brightness": 200, "transition": 1}],
     )
 
@@ -402,7 +404,9 @@ class WidgetCreateRequest(BaseModel):
     x: int = Field(default=0, ge=0, le=12, description="X position on grid (0-12)")
     y: int = Field(default=0, ge=0, le=50, description="Y position on grid")
     width: int = Field(default=2, ge=1, le=12, description="Widget width in grid units")
-    height: int = Field(default=1, ge=1, le=10, description="Widget height in grid units")
+    height: int = Field(
+        default=1, ge=1, le=10, description="Widget height in grid units"
+    )
 
 
 class WidgetResponse(BaseModel):
@@ -416,7 +420,9 @@ class WidgetResponse(BaseModel):
     card_type: str = Field(..., description="Widget type")
     entity_id: Optional[str] = Field(None, description="Associated HA entity ID")
     title: Optional[str] = Field(None, description="Display label")
-    config: Dict[str, Any] = Field(default_factory=dict, description="Widget configuration JSON")
+    config: Dict[str, Any] = Field(
+        default_factory=dict, description="Widget configuration JSON"
+    )
     x: int = Field(..., description="X position on grid")
     y: int = Field(..., description="Y position on grid")
     width: int = Field(..., description="Width in grid units")
@@ -480,10 +486,18 @@ class CardUpdateRequest(BaseModel):
         description="Widget-specific configuration as JSON",
         examples=[{"color": "blue"}],
     )
-    x: Optional[int] = Field(default=None, ge=0, le=12, description="X position on grid (0-12)")
-    y: Optional[int] = Field(default=None, ge=0, le=50, description="Y position on grid")
-    width: Optional[int] = Field(default=None, ge=1, le=12, description="Widget width in grid units")
-    height: Optional[int] = Field(default=None, ge=1, le=10, description="Widget height in grid units")
+    x: Optional[int] = Field(
+        default=None, ge=0, le=12, description="X position on grid (0-12)"
+    )
+    y: Optional[int] = Field(
+        default=None, ge=0, le=50, description="Y position on grid"
+    )
+    width: Optional[int] = Field(
+        default=None, ge=1, le=12, description="Widget width in grid units"
+    )
+    height: Optional[int] = Field(
+        default=None, ge=1, le=10, description="Widget height in grid units"
+    )
 
 
 class CardConfigRequest(BaseModel):
@@ -522,7 +536,9 @@ class CardConfigRequest(BaseModel):
     x: int = Field(default=0, ge=0, le=12, description="X position on grid (0-12)")
     y: int = Field(default=0, ge=0, le=50, description="Y position on grid")
     width: int = Field(default=2, ge=1, le=12, description="Widget width in grid units")
-    height: int = Field(default=1, ge=1, le=10, description="Widget height in grid units")
+    height: int = Field(
+        default=1, ge=1, le=10, description="Widget height in grid units"
+    )
 
 
 class CardsBulkUpdateRequest(BaseModel):
@@ -538,8 +554,23 @@ class CardsBulkUpdateRequest(BaseModel):
         description="Complete list of cards (widgets) for this dashboard",
         examples=[
             [
-                {"id": 1, "card_type": "switch", "entity_id": "switch.light_1", "x": 0, "y": 0, "width": 2, "height": 1},
-                {"card_type": "sensor", "entity_id": "sensor.temp_1", "x": 2, "y": 0, "width": 3, "height": 1},
+                {
+                    "id": 1,
+                    "card_type": "switch",
+                    "entity_id": "switch.light_1",
+                    "x": 0,
+                    "y": 0,
+                    "width": 2,
+                    "height": 1,
+                },
+                {
+                    "card_type": "sensor",
+                    "entity_id": "sensor.temp_1",
+                    "x": 2,
+                    "y": 0,
+                    "width": 3,
+                    "height": 1,
+                },
             ]
         ],
     )

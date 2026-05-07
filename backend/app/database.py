@@ -14,7 +14,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 # Database engine (SQLite)
-engine = create_engine("sqlite:///./ha_dashboard.db", connect_args={"check_same_thread": False})
+engine = create_engine(
+    "sqlite:///./ha_dashboard.db", connect_args={"check_same_thread": False}
+)
 SessionLocal = sessionmaker(engine, autocommit=False, autoflush=True)
 Base = declarative_base()
 
@@ -26,7 +28,9 @@ class Page(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)  # e.g., "Living Room", "Kitchen"
-    description = Column(String, default="", nullable=True)  # Optional dashboard description
+    description = Column(
+        String, default="", nullable=True
+    )  # Optional dashboard description
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(
         DateTime,
