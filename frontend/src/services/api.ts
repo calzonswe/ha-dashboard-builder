@@ -93,6 +93,32 @@ export async function deleteDashboard(id: string): Promise<void> {
   await fetch(`${API_BASE}/dashboards/${id}`, { method: 'DELETE' })
 }
 
+/** Replace all cards (widgets) on a dashboard atomically. */
+interface CardPayload {
+  id?: number | null
+  card_type: string
+  entity_id?: string | null
+  title?: string | null
+  config?: Record<string, unknown>
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export async function updateDashboardCards(
+  id: string,
+  cards: CardPayload[],
+): Promise<{ cards: { id: number; page_id: number; card_type: string }[] }> {
+  return fetchJSON<{ cards: { id: number; page_id: number; card_type: string }[] }>(
+    `${API_BASE}/dashboards/${id}/cards`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({ cards }),
+    },
+  )
+}
+
 // ─── SSE / Real-time Events ────────────────────────────────────────
 
 /** Returns the URL for the SSE events stream endpoint */

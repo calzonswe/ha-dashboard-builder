@@ -450,3 +450,108 @@ class FullDashboardResponse(BaseModel):
         default_factory=list,
         description="All widgets on this dashboard",
     )
+
+
+class CardUpdateRequest(BaseModel):
+    """Request to update a single widget (card) on a dashboard.
+
+    All fields are optional — only provided fields will be updated.
+    This enables partial updates (e.g., changing just x/y position).
+    """
+
+    card_type: Optional[str] = Field(
+        default=None,
+        description="Widget type (e.g., 'switch', 'light')",
+        examples=["switch"],
+    )
+    entity_id: Optional[str] = Field(
+        default=None,
+        description="Home Assistant entity ID this widget controls",
+        examples=["switch.living_room_light"],
+    )
+    title: Optional[str] = Field(
+        default=None,
+        max_length=100,
+        description="Display label for the widget",
+        examples=["Living Room Light"],
+    )
+    config: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Widget-specific configuration as JSON",
+        examples=[{"color": "blue"}],
+    )
+    x: Optional[int] = Field(default=None, ge=0, le=12, description="X position on grid (0-12)")
+    y: Optional[int] = Field(default=None, ge=0, le=50, description="Y position on grid")
+    width: Optional[int] = Field(default=None, ge=1, le=12, description="Widget width in grid units")
+    height: Optional[int] = Field(default=None, ge=1, le=10, description="Widget height in grid units")
+
+
+class CardConfigRequest(BaseModel):
+    """A card (widget) with its ID and configuration for bulk update.
+
+    Used when replacing all cards on a dashboard at once. The `id` field
+    is used to match existing widgets; new cards without an id will be created.
+    """
+
+    id: Optional[int] = Field(
+        default=None,
+        description="Existing widget ID (for updates); omit for new cards",
+        examples=[1],
+    )
+    card_type: str = Field(
+        ...,
+        description="Widget type (e.g., 'switch', 'light')",
+        examples=["switch"],
+    )
+    entity_id: Optional[str] = Field(
+        default=None,
+        description="Home Assistant entity ID this widget controls",
+        examples=["switch.living_room_light"],
+    )
+    title: Optional[str] = Field(
+        default=None,
+        max_length=100,
+        description="Display label for the widget",
+        examples=["Living Room Light"],
+    )
+    config: Optional[Dict[str, Any]] = Field(
+        default_factory=dict,
+        description="Widget-specific configuration as JSON",
+        examples=[{"color": "blue"}],
+    )
+    x: int = Field(default=0, ge=0, le=12, description="X position on grid (0-12)")
+    y: int = Field(default=0, ge=0, le=50, description="Y position on grid")
+    width: int = Field(default=2, ge=1, le=12, description="Widget width in grid units")
+    height: int = Field(default=1, ge=1, le=10, description="Widget height in grid units")
+
+
+class CardsBulkUpdateRequest(BaseModel):
+    """Request to replace all cards on a dashboard.
+
+    Accepts an array of card configurations that completely replaces the
+    existing set of widgets for this dashboard. Used by the frontend
+    saveCards() hook after drag-and-drop layout changes.
+    """
+
+    cards: List[CardConfigRequest] = Field(
+        ...,
+        description="Complete list of cards (widgets) for this dashboard",
+        examples=[
+            [
+                {"id": 1, "card_type": "switch", "entity_id": "switch.light_1", "x": 0, "y": 0, "width": 2, "height": 1},
+                {"card_type": "sensor", "entity_id": "sensor.temp_1", "x": 2, "y": 0, "width": 3, "height": 1},
+            ]
+        ],
+    )
+
+
+class CardsBulkUpdateResponse(BaseModel):
+    """Response confirming bulk card update.
+
+    Returns the updated list of widgets with their server-assigned IDs.
+    """
+
+    cards: List[WidgetResponse] = Field(
+        ...,
+        description="Updated widget records with server-assigned IDs",
+    )

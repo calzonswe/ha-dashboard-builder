@@ -16,9 +16,12 @@ from .schemas import (
     DashboardResponse,
     DashboardListResponse,
     WidgetCreateRequest,
+    CardUpdateRequest,
     WidgetResponse,
     WidgetListResponse,
     FullDashboardResponse,
+    CardsBulkUpdateRequest,
+    CardsBulkUpdateResponse,
 )
 
 router = APIRouter()
@@ -202,9 +205,9 @@ def create_widget(dashboard_id: int, req: WidgetCreateRequest, db: Session = Dep
 
 @router.put("/dashboards/{dashboard_id}/widgets/{widget_id}", response_model=WidgetResponse)
 def update_widget(
-    dashboard_id: int, widget_id: int, req: WidgetCreateRequest, db: Session = Depends(get_db)
+    dashboard_id: int, widget_id: int, req: CardUpdateRequest, db: Session = Depends(get_db)
 ):
-    """Update an existing widget.
+    """Update an existing widget (partial update — only provided fields change).
 
     PUT /api/v1/dashboards/1/widgets/1 -> 200 { ... }
     """
@@ -216,14 +219,23 @@ def update_widget(
     if not card:
         raise HTTPException(status_code=404, detail="Widget not found")
 
-    card.card_type = req.card_type
-    card.entity_id = req.entity_id or ""
-    card.title = req.title or ""
-    card.config = req.config or {}
-    card.x = req.x
-    card.y = req.y
-    card.width = req.width
-    card.height = req.height
+    # Only update fields that were provided (not None)
+    if req.card_type is not None:
+        card.card_type = req.card_type
+    if req.entity_id is not None:
+        card.entity_id = req.entity_id or ""
+    if req.title is not None:
+        card.title = req.title or ""
+    if req.config is not None:
+        card.config = req.config or {}
+    if req.x is not None:
+        card.x = req.x
+    if req.y is not None:
+        card.y = req.y
+    if req.width is not None:
+        card.width = req.width
+    if req.height is not None:
+        card.height = req.height
     db.commit()
     db.refresh(card)
 
@@ -239,6 +251,105 @@ def update_widget(
         width=card.width or 1,
         height=card.height or 1,
     )
+
+
+@router.put("/dashboards/{dashboard_id}/cards", response_model=CardsBulkUpdateResponse)
+def bulk_update_cards(dashboard_id: int, req: CardsBulkUpdateRequest, db: Session = Depends(get_db)):
+    """Replace all cards (widgets) on a dashboard atomically.
+
+    This is the primary save endpoint used by the frontend drag-and-drop builder.
+    Existing cards with matching IDs are updated; new cards (no ID) are created;
+    cards not in the request are deleted.
+
+    PUT /api/v1/dashboards/1/cards -> 200 { "cards": [...] }
+    """
+    page = db.query(Page).filter(Page.id == dashboard_id).first()
+    if not page:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    # Collect IDs of cards in the request for deletion logic
+    incoming_ids = {c.id for c in req.cards if c.id is not None}
+
+    # Delete cards that are no longer in the request (and have an ID)
+    existing_cards = db.query(Card).filter(Card.page_id == dashboard_id).all()
+    for card in existing_cards:
+        if card.id not in incoming_ids:
+            db.delete(card)
+
+    # Process each card in the request — update or create
+    result_widgets = []
+    for card_req in req.cards:
+        if card_req.id is not None:
+            # Update existing card
+            card = (
+                db.query(Card)
+                .filter(Card.id == card_req.id, Card.page_id == dashboard_id)
+                .first()
+            )
+            if card:
+                card.card_type = card_req.card_type
+                card.entity_id = card_req.entity_id or ""
+                card.title = card_req.title or ""
+                card.config = card_req.config or {}
+                card.x = card_req.x
+                card.y = card_req.y
+                card.width = card_req.width
+                card.height = card_req.height
+            else:
+                # Card ID doesn't belong to this dashboard — create new
+                card = Card(
+                    page_id=dashboard_id,
+                    card_type=card_req.card_type,
+                    entity_id=card_req.entity_id or "",
+                    title=card_req.title or "",
+                    config=card_req.config or {},
+                    x=card_req.x,
+                    y=card_req.y,
+                    width=card_req.width,
+                    height=card_req.height,
+                )
+                db.add(card)
+        else:
+            # New card — create it
+            card = Card(
+                page_id=dashboard_id,
+                card_type=card_req.card_type,
+                entity_id=card_req.entity_id or "",
+                title=card_req.title or "",
+                config=card_req.config or {},
+                x=card_req.x,
+                y=card_req.y,
+                width=card_req.width,
+                height=card_req.height,
+            )
+            db.add(card)
+
+    db.commit()
+
+    # Fetch and return all cards for this dashboard (ordered by position)
+    cards = (
+        db.query(Card)
+        .filter(Card.page_id == dashboard_id)
+        .order_by(Card.y, Card.x)
+        .all()
+    )
+    result_widgets = [
+        WidgetResponse(
+            id=card.id,
+            page_id=card.page_id or 0,
+            card_type=card.card_type or "",
+            entity_id=card.entity_id if card.entity_id != "" else None,
+            title=card.title if card.title != "" else None,
+            config=card.config or {},
+            x=card.x or 0,
+            y=card.y or 0,
+            width=card.width or 1,
+            height=card.height or 1,
+        )
+        for card in cards
+    ]
+
+    return CardsBulkUpdateResponse(cards=result_widgets)
 
 
 @router.delete("/dashboards/{dashboard_id}/widgets/{widget_id}", status_code=204)

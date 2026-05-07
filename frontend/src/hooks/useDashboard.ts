@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { DashboardConfig, DashboardCard, CardConfig } from '../types/api'
-import { getDashboard, updateDashboard } from '../services/api'
+import {
+  getDashboard as apiGetDashboard,
+  updateDashboardCards,
+} from '../services/api'
 
 interface UseDashboardResult {
   dashboard: DashboardConfig | null
@@ -30,7 +33,7 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
     setLoading(true)
     setError(null)
     try {
-      const data = await getDashboard(dashboardId)
+      const data = await apiGetDashboard(dashboardId)
       setDashboard(data)
       setCards(data.cards || [])
     } catch (err) {
@@ -44,14 +47,51 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
     loadDashboard()
   }, [loadDashboard])
 
-  /** Save current cards to the server */
+  /** Save current cards to the server via bulk card update endpoint */
   const saveCards = useCallback(
     async (newCards: DashboardCard[]) => {
       setSaving(true)
       setError(null)
       try {
-        await updateDashboard(dashboardId, { cards: newCards })
-        setCards(newCards)
+        // Map frontend DashboardCard[] → backend CardPayload[]
+        const payload = newCards.map((c) => ({
+          id: c.id.startsWith('card-') ? null : parseInt(c.id, 10),
+          card_type: c.config?.type || 'state',
+          entity_id: c.entity_id || undefined,
+          title: c.config?.title || undefined,
+          config: { ...c.config } as Record<string, unknown>,
+          x: c.x,
+          y: c.y,
+          width: c.width,
+          height: c.height,
+        }))
+
+        const result = await updateDashboardCards(dashboardId, payload)
+
+        // Merge server-assigned IDs back into local state
+        setCards((prev) => {
+          const updated = prev.map((c) => {
+            const serverCard = result.cards.find(
+              (sc) => sc.id === c.id || sc.id === parseInt(c.id, 10),
+            )
+            return serverCard ? { ...c, id: String(serverCard.id) } : c
+          })
+          // Add newly created cards that don't exist locally yet
+          const localIds = new Set(updated.map((u) => u.id))
+          result.cards.forEach((sc) => {
+            if (!localIds.has(String(sc.id))) {
+              updated.push({
+                id: String(sc.id),
+                entity_id: '',
+                x: 0,
+                y: 0,
+                width: 1,
+                height: 1,
+              } as DashboardCard)
+            }
+          })
+          return updated
+        })
         setDashboard((prev) => (prev ? { ...prev, cards: newCards } : null))
       } catch (err) {
         const errObj = err instanceof Error ? err : new Error(String(err))
