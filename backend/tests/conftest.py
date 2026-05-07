@@ -1,6 +1,5 @@
 """Shared test fixtures for integration testing."""
 
-import os
 import pytest
 from unittest.mock import MagicMock
 
@@ -8,9 +7,17 @@ from unittest.mock import MagicMock
 def pytest_configure(config):
     """Delete stale DB file before any tests run so init_db() creates fresh schema."""
     import pathlib
+
     db_path = pathlib.Path(__file__).parent.parent / "ha_dashboard.db"
     if db_path.exists():
         db_path.unlink()
+
+
+def pytest_sessionstart(session):
+    """Initialize the database after deleting stale DB file."""
+    from app.database import init_db
+
+    init_db()
 
 
 @pytest.fixture(scope="session")
@@ -30,7 +37,10 @@ def mock_ha_api():
         {
             "entity_id": "sensor.living_room_temperature",
             "state": "22.5",
-            "attributes": {"friendly_name": "Living Room Temperature", "unit_of_measurement": "°C"},
+            "attributes": {
+                "friendly_name": "Living Room Temperature",
+                "unit_of_measurement": "°C",
+            },
             "last_changed": "2026-05-06T10:00:00Z",
         },
         {
@@ -99,4 +109,6 @@ def mock_ha_api():
 @pytest.fixture(autouse=True)
 def patch_ha_client(monkeypatch, mock_ha_api):
     """Automatically patch HAAPI in the app module for all tests."""
-    monkeypatch.setattr("app.services.ha_client.HAAPI", lambda *args, **kwargs: mock_ha_api)
+    monkeypatch.setattr(
+        "app.services.ha_client.HAAPI", lambda *args, **kwargs: mock_ha_api
+    )

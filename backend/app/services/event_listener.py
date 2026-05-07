@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from typing import Optional, Dict, Any, Set
+from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -92,18 +92,25 @@ class HAEventListener:
 
             previous = self._previous_states.get(entity_id, {})
             prev_state = previous.get("state", "")
-            prev_attrs = previous.get("attributes", {})
 
             # Detect changes: state changed OR new entity appeared
-            if current_state_val != prev_state or entity_id not in self._previous_states:
-                changes.append({
-                    "entity_id": entity_id,
-                    "state": current_state_val,
-                    "attributes": attributes,
-                    "last_changed": state.get("last_changed_at"),
-                })
+            if (
+                current_state_val != prev_state
+                or entity_id not in self._previous_states
+            ):
+                changes.append(
+                    {
+                        "entity_id": entity_id,
+                        "state": current_state_val,
+                        "attributes": attributes,
+                        "last_changed": state.get("last_changed_at"),
+                    }
+                )
 
-            current_states[entity_id] = {"state": current_state_val, "attributes": attributes}
+            current_states[entity_id] = {
+                "state": current_state_val,
+                "attributes": attributes,
+            }
 
         # Update snapshot
         self._previous_states = current_states

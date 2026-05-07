@@ -68,14 +68,18 @@ class HAAPI:
 
         for attempt in range(1, self.max_retries + 1):
             try:
-                logger.debug(f"Request {method} {url} (attempt {attempt}/{self.max_retries})")
+                logger.debug(
+                    f"Request {method} {url} (attempt {attempt}/{self.max_retries})"
+                )
 
                 with httpx.Client(timeout=self.timeout) as client:
                     response = client.request(method, url, headers=headers, **kwargs)
 
                     # Check for HTTP errors
                     if response.status_code >= 400:
-                        error_msg = f"HTTP {response.status_code}: {response.reason_phrase}"
+                        error_msg = (
+                            f"HTTP {response.status_code}: {response.reason_phrase}"
+                        )
                         logger.warning(f"{error_msg} on attempt {attempt}")
 
                         # Don't retry client errors (4xx) except 429 (rate limit)
@@ -134,7 +138,10 @@ class HAAPI:
             raise HAConnectionError("Empty response from /api/states")
         # Count entities to verify we got real data
         entity_count = len(data) if isinstance(data, list) else 0
-        logger.info(f"Connected to Home Assistant at {self.host}:{self.port} " f"({entity_count} entities found)")
+        logger.info(
+            f"Connected to Home Assistant at {self.host}:{self.port} "
+            f"({entity_count} entities found)"
+        )
         return {"host": self.host, "port": self.port, "entities": entity_count}
 
     def get_states(self) -> List[Dict[str, Any]]:

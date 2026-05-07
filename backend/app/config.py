@@ -1,10 +1,16 @@
 """Application configuration settings."""
 
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables or .env file."""
+
+    model_config = ConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+    )
 
     # Application settings
     APP_NAME: str = "HA Dashboard Builder"
@@ -26,10 +32,6 @@ class Settings(BaseSettings):
 
     # CORS settings (frontend origin)
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
 
 
 # Singleton instance

@@ -25,7 +25,10 @@ class MockHAAPI:
             {
                 "entity_id": "sensor.living_room_temperature",
                 "state": "22.5",
-                "attributes": {"friendly_name": "Living Room Temperature", "unit_of_measurement": "°C"},
+                "attributes": {
+                    "friendly_name": "Living Room Temperature",
+                    "unit_of_measurement": "°C",
+                },
                 "last_changed": "2026-05-06T10:00:00Z",
             },
             {
@@ -96,7 +99,10 @@ class TestHAConnection:
     def setup(self):
         """Patch HAAPI globally and create test client."""
         # Patch at module levels where HAAPI is imported/used
-        with patch("app.main.HAAPI", MockHAAPI), patch("app.api.routes.HAAPI", MockHAAPI):
+        with (
+            patch("app.main.HAAPI", MockHAAPI),
+            patch("app.api.routes.HAAPI", MockHAAPI),
+        ):
 
             # Reset global state before each test
             import app.api.routes as routes_module
@@ -150,7 +156,10 @@ class TestHAConnection:
             def test_connection(self):
                 raise HAConnectionError("Cannot resolve host")
 
-        with patch("app.api.routes.HAAPI", FailingHAAPI), patch("app.main.HAAPI", FailingHAAPI):
+        with (
+            patch("app.api.routes.HAAPI", FailingHAAPI),
+            patch("app.main.HAAPI", FailingHAAPI),
+        ):
 
             routes_module._ha_client = None
             routes_module._entity_service = None
@@ -184,12 +193,17 @@ class TestEntityDiscovery:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Patch HAAPI and establish a connection before each test."""
-        with patch("app.main.HAAPI", MockHAAPI), patch("app.api.routes.HAAPI", MockHAAPI):
+        with (
+            patch("app.main.HAAPI", MockHAAPI),
+            patch("app.api.routes.HAAPI", MockHAAPI),
+        ):
 
             import app.api.routes as routes_module
 
             # Establish connection first
-            routes_module.set_ha_connection(host="192.168.1.50", port=8123, token="test_token")
+            routes_module.set_ha_connection(
+                host="192.168.1.50", port=8123, token="test_token"
+            )
 
             self.client = TestClient(app)
             yield
@@ -221,7 +235,9 @@ class TestEntityDiscovery:
         # Discover first to populate cache
         self.client.post("/api/api/ha/discover")
 
-        response = self.client.get("/api/api/ha/entities/sensor.living_room_temperature")
+        response = self.client.get(
+            "/api/api/ha/entities/sensor.living_room_temperature"
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["entity_id"] == "sensor.living_room_temperature"
@@ -244,11 +260,16 @@ class TestEntitySearch:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Patch HAAPI and establish connection + discovery before each test."""
-        with patch("app.main.HAAPI", MockHAAPI), patch("app.api.routes.HAAPI", MockHAAPI):
+        with (
+            patch("app.main.HAAPI", MockHAAPI),
+            patch("app.api.routes.HAAPI", MockHAAPI),
+        ):
 
             import app.api.routes as routes_module
 
-            routes_module.set_ha_connection(host="192.168.1.50", port=8123, token="test_token")
+            routes_module.set_ha_connection(
+                host="192.168.1.50", port=8123, token="test_token"
+            )
 
             self.client = TestClient(app)
             yield
@@ -301,11 +322,16 @@ class TestServiceCalls:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Patch HAAPI and establish connection before each test."""
-        with patch("app.main.HAAPI", MockHAAPI), patch("app.api.routes.HAAPI", MockHAAPI):
+        with (
+            patch("app.main.HAAPI", MockHAAPI),
+            patch("app.api.routes.HAAPI", MockHAAPI),
+        ):
 
             import app.api.routes as routes_module
 
-            routes_module.set_ha_connection(host="192.168.1.50", port=8123, token="test_token")
+            routes_module.set_ha_connection(
+                host="192.168.1.50", port=8123, token="test_token"
+            )
 
             self.client = TestClient(app)
             yield
@@ -345,7 +371,10 @@ class TestErrorHandling:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Patch HAAPI and create test client."""
-        with patch("app.main.HAAPI", MockHAAPI), patch("app.api.routes.HAAPI", MockHAAPI):
+        with (
+            patch("app.main.HAAPI", MockHAAPI),
+            patch("app.api.routes.HAAPI", MockHAAPI),
+        ):
 
             import app.api.routes as routes_module
 
@@ -378,7 +407,9 @@ class TestErrorHandling:
         # First establish connection so we get past the dependency check
         import app.api.routes as routes_module
 
-        routes_module.set_ha_connection(host="192.168.1.50", port=8123, token="test_token")
+        routes_module.set_ha_connection(
+            host="192.168.1.50", port=8123, token="test_token"
+        )
 
         response = self.client.post(
             "/api/api/ha/search",
@@ -393,11 +424,16 @@ class TestWebSocket:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Patch HAAPI and establish connection before each test."""
-        with patch("app.main.HAAPI", MockHAAPI), patch("app.api.routes.HAAPI", MockHAAPI):
+        with (
+            patch("app.main.HAAPI", MockHAAPI),
+            patch("app.api.routes.HAAPI", MockHAAPI),
+        ):
 
             import app.api.routes as routes_module
 
-            routes_module.set_ha_connection(host="192.168.1.50", port=8123, token="test_token")
+            routes_module.set_ha_connection(
+                host="192.168.1.50", port=8123, token="test_token"
+            )
 
             self.client = TestClient(app)
             yield
@@ -407,5 +443,7 @@ class TestWebSocket:
         # Check that the websocket route exists by looking at app routes
         from fastapi.routing import APIWebSocketRoute
 
-        ws_routes = [r for r in self.client.app.routes if isinstance(r, APIWebSocketRoute)]
+        ws_routes = [
+            r for r in self.client.app.routes if isinstance(r, APIWebSocketRoute)
+        ]
         assert len(ws_routes) > 0

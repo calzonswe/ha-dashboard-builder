@@ -71,38 +71,53 @@ class EntityCache:
     def get_by_domain(self, domain: str) -> List[Dict[str, Any]]:
         """Get entities filtered by domain."""
         conn = self._get_conn()
-        cursor = conn.execute("SELECT * FROM entities WHERE domain = ? ORDER BY entity_id", (domain,))
+        cursor = conn.execute(
+            "SELECT * FROM entities WHERE domain = ? ORDER BY entity_id", (domain,)
+        )
         return [dict(row) for row in cursor.fetchall()]
 
     def get_by_area(self, area: str) -> List[Dict[str, Any]]:
         """Get entities filtered by area/room name."""
         conn = self._get_conn()
-        cursor = conn.execute("SELECT * FROM entities WHERE area = ? ORDER BY entity_id", (area,))
+        cursor = conn.execute(
+            "SELECT * FROM entities WHERE area = ? ORDER BY entity_id", (area,)
+        )
         return [dict(row) for row in cursor.fetchall()]
 
     def get_by_device(self, device_id: str) -> List[Dict[str, Any]]:
         """Get entities filtered by device ID."""
         conn = self._get_conn()
-        cursor = conn.execute("SELECT * FROM entities WHERE device_id = ? ORDER BY entity_id", (device_id,))
+        cursor = conn.execute(
+            "SELECT * FROM entities WHERE device_id = ? ORDER BY entity_id",
+            (device_id,),
+        )
         return [dict(row) for row in cursor.fetchall()]
 
     def get_by_entity_type(self, entity_type: str) -> List[Dict[str, Any]]:
         """Get entities filtered by entity type."""
         conn = self._get_conn()
-        cursor = conn.execute("SELECT * FROM entities WHERE entity_type = ? ORDER BY entity_id", (entity_type,))
+        cursor = conn.execute(
+            "SELECT * FROM entities WHERE entity_type = ? ORDER BY entity_id",
+            (entity_type,),
+        )
         return [dict(row) for row in cursor.fetchall()]
 
     def get_by_state(self, state: str) -> List[Dict[str, Any]]:
         """Get entities matching a specific current state."""
         conn = self._get_conn()
-        cursor = conn.execute("SELECT * FROM entities WHERE state = ? ORDER BY entity_id", (state,))
+        cursor = conn.execute(
+            "SELECT * FROM entities WHERE state = ? ORDER BY entity_id", (state,)
+        )
         return [dict(row) for row in cursor.fetchall()]
 
     def search(self, query: str) -> List[Dict[str, Any]]:
         """Search entities by name or ID substring (case-insensitive)."""
         conn = self._get_conn()
         pattern = f"%{query}%"
-        cursor = conn.execute("SELECT * FROM entities WHERE name LIKE ? OR entity_id LIKE ?", (pattern, pattern))
+        cursor = conn.execute(
+            "SELECT * FROM entities WHERE name LIKE ? OR entity_id LIKE ?",
+            (pattern, pattern),
+        )
         results = [dict(row) for row in cursor.fetchall()]
         logger.info(f"Search '{query}' returned {len(results)} entities")
         return results
@@ -126,7 +141,9 @@ class EntityCache:
             entity_type = parts[1] if len(parts) >= 2 else ""
 
             # Get current state for change detection
-            cursor = conn.execute("SELECT state FROM entities WHERE entity_id = ?", (entity_id,))
+            cursor = conn.execute(
+                "SELECT state FROM entities WHERE entity_id = ?", (entity_id,)
+            )
             existing = cursor.fetchone()
             old_state = existing["state"] if existing else None
 
@@ -178,11 +195,14 @@ class EntityCache:
         logger.info(f"Entity cache refreshed: {count} entities")
         return count
 
-    def get_state_history(self, entity_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_state_history(
+        self, entity_id: str, limit: int = 50
+    ) -> List[Dict[str, Any]]:
         """Get state change history for an entity."""
         conn = self._get_conn()
         cursor = conn.execute(
-            "SELECT * FROM state_history WHERE entity_id = ? ORDER BY id DESC LIMIT ?", (entity_id, limit)
+            "SELECT * FROM state_history WHERE entity_id = ? ORDER BY id DESC LIMIT ?",
+            (entity_id, limit),
         )
         return [dict(row) for row in cursor.fetchall()]
 
@@ -200,7 +220,9 @@ class EntityCache:
         conn.commit()
         logger.info("Entity cache cleared")
 
-    def get_entities_by_group(self, group_type: str = "area") -> Dict[str, List[Dict[str, Any]]]:
+    def get_entities_by_group(
+        self, group_type: str = "area"
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """Group entities by area or device.
 
         Args:
@@ -319,7 +341,9 @@ class EntityDiscoveryService:
             devices = self.ha_client.get_devices() or []
             logger.info(f"Fetched {len(devices)} devices for enrichment")
         except Exception as exc:
-            logger.warning(f"Could not fetch devices (continuing without device metadata): {exc}")
+            logger.warning(
+                f"Could not fetch devices (continuing without device metadata): {exc}"
+            )
 
         # Build a lookup: device_id → area_name
         device_areas: Dict[str, str] = {}
@@ -348,10 +372,13 @@ class EntityDiscoveryService:
                     "entity_type": entity_type,
                     "name": state.get("attributes", {}).get("friendly_name", entity_id),
                     "state": str(state.get("state", "")),
-                    "unit_of_measurement": state.get("attributes", {}).get("unit_of_measure"),
+                    "unit_of_measurement": state.get("attributes", {}).get(
+                        "unit_of_measure"
+                    ),
                     "device_id": device_id,
                     "area": area_name,
-                    "last_changed": state.get("last_changed_iso") or str(state.get("last_changed", "")),
+                    "last_changed": state.get("last_changed_iso")
+                    or str(state.get("last_changed", "")),
                 }
             )
 
