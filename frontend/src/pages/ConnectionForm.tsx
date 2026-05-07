@@ -21,7 +21,7 @@ export default function ConnectionForm() {
     setMessage('Connecting...')
 
     try {
-      const res = await fetch('/api/api/ha/connect', {
+      const res = await fetch('/api/ha/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ host, port, token }),
