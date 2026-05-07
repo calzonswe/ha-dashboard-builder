@@ -21,7 +21,7 @@ from app.services.entity_discovery import EntityDiscoveryService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/ha", tags=["Home Assistant"])
+router = APIRouter(prefix="/ha", tags=["Home Assistant"])
 
 # Global state for the current HA connection and entity cache
 _ha_client: Optional[HAAPI] = None
