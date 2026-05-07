@@ -41,11 +41,12 @@ export function useEntityStates() {
  */
 export function useWebSocket(entityId: string) {
   const { states } = useContext(EntityStateContext)
-  
+
+  // Guard against invalid input — must be at top level before any hooks
   if (!entityId || !states[entityId]) return null
 
   const entityData = states[entityId]
-  const attrs = entityData.attributes as Record<string, unknown> | undefined || {}
+  const attrs = (entityData?.attributes as Record<string, unknown>) ?? {}
 
   // Helper to safely access numeric attributes
   const getNumericAttr = (key: string): number | null => {
@@ -62,7 +63,7 @@ export function useWebSocket(entityId: string) {
     state: entityData.state,
     current_temperature: getNumericAttr('current_temperature'),
     target_temperature: getNumericAttr('target_temp_high') ?? getNumericAttr('target_temp_low') ?? getNumericAttr('temperature'),
-    hvac_mode: attrs['hvac_mode'] as string | undefined || 'auto',
+    hvac_mode: attrs['hvac_mode'] as string | undefined,
     fan_mode: attrs['fan_mode'] as string | undefined,
     swing_mode: attrs['swing_mode'] as string | undefined,
   }
