@@ -11,8 +11,7 @@ from sqlalchemy import (
     String,
     create_engine,
 )
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 # Database engine (SQLite)
 engine = create_engine("sqlite:///./ha_dashboard.db", connect_args={"check_same_thread": False})
