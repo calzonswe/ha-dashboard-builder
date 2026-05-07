@@ -354,7 +354,7 @@ def bulk_update_cards(dashboard_id: int, req: CardsBulkUpdateRequest, db: Sessio
 
 @router.delete("/dashboards/{dashboard_id}/widgets/{widget_id}", status_code=204)
 def delete_widget(dashboard_id: int, widget_id: int, db: Session = Depends(get_db)):
-    """Remove a widget from a dashboard.
+    """Remove a single widget from a dashboard.
 
     DELETE /api/v1/dashboards/1/widgets/1 -> 204 (no content)
     """
@@ -366,21 +366,37 @@ def delete_widget(dashboard_id: int, widget_id: int, db: Session = Depends(get_d
     if not card:
         raise HTTPException(status_code=404, detail="Widget not found")
 
-    db.delete(card)
-    db.commit()
+    try:
+        db.delete(card)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, detail="Failed to delete widget"
+        )
 
 
 @router.delete("/dashboards/{dashboard_id}", status_code=204)
 def delete_dashboard(dashboard_id: int, db: Session = Depends(get_db)):
-    """Delete a dashboard and all its widgets.
+    """Delete a dashboard and all its widgets atomically.
 
     DELETE /api/v1/dashboards/1 -> 204 (no content)
+
+    Uses SQLAlchemy cascade (Page.cards relationship with cascade="all, delete-orphan")
+    to atomically delete the page and all associated cards in a single operation.
+    Wrapped in try/except with rollback for full transaction safety.
     """
     page = db.query(Page).filter(Page.id == dashboard_id).first()
     if not page:
         raise HTTPException(status_code=404, detail="Dashboard not found")
 
-    # Delete all cards on this page first
-    db.query(Card).filter(Card.page_id == dashboard_id).delete()
-    db.delete(page)
-    db.commit()
+    # SQLAlchemy cascade on Page.cards (cascade="all, delete-orphan") handles
+    # deleting all associated cards automatically. No manual card deletion needed.
+    try:
+        db.delete(page)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, detail="Failed to delete dashboard and its widgets"
+        )
