@@ -5,7 +5,6 @@ and their associated widgets/cards.
 """
 
 from datetime import datetime
-from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session

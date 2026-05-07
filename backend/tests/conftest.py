@@ -1,6 +1,5 @@
 """Shared test fixtures for integration testing."""
 
-import os
 import pytest
 from unittest.mock import MagicMock
 

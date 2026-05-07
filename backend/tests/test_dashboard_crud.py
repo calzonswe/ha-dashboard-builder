@@ -4,7 +4,6 @@ Tests for creating, listing, updating, and deleting dashboards and widgets.
 These endpoints don't require an HA connection — they operate on the local SQLite DB.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 
