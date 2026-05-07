@@ -68,11 +68,19 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
 
         const result = await updateDashboardCards(dashboardId, payload)
 
-        // Merge server-assigned IDs back into local state
+        // Merge server-assigned IDs back into local state.
+        // result.cards[i] corresponds to newCards[i] by position.
         setCards((prev) => {
           const updated = prev.map((c) => {
+            if (c.id.startsWith('card-')) {
+              // Temp ID — match by position in the saved array
+              const idx = newCards.findIndex((nc) => nc.id === c.id)
+              const serverCard = result.cards[idx]
+              return serverCard ? { ...c, id: String(serverCard.id) } : c
+            }
+            // Existing card with numeric ID — match by ID
             const serverCard = result.cards.find(
-              (sc) => sc.id === c.id || sc.id === parseInt(c.id, 10),
+              (sc) => sc.id === parseInt(c.id, 10),
             )
             return serverCard ? { ...c, id: String(serverCard.id) } : c
           })
