@@ -9,11 +9,13 @@ description = "Home Assistant Integration API with real-time state updates"
 requires-python = ">=3.10"
 
 dependencies = [
-    "fastapi",
-    "uvicorn[standard]",
-    "aiohttp",
-    "pydantic",
-    "pydantic-settings",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "sqlalchemy==2.0.25",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.8.0",
+    "httpx>=0.28.0",
+    "python-dotenv==1.0.0",
 ]
 
 # ---------------------------------------------------------------------------
@@ -22,10 +24,13 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "pytest-asyncio",
-    "pytest-cov",
-    "httpx",
+    "pytest==8.1.1",
+    "pytest-asyncio==0.23.7",
+    "pytest-cov==5.0.0",
+    "httpx[trio]>=0.28.0",
+    "flake8==7.0.0",
+    "black==24.2.0",
+    "mypy==1.8.0",
 ]
 
 # ---------------------------------------------------------------------------
