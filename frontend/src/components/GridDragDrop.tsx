@@ -19,6 +19,48 @@ interface GridDragDropProps {
   children: React.ReactNode
 }
 
+/** Wrapper component that adds drag handlers and selection styles to each widget.
+
+This replaces the deprecated React.cloneElement() pattern with a proper
+wrapper component, ensuring correct ref forwarding, type safety, and
+compatibility with React 18+. */
+function WidgetWrapper({
+  child,
+  widgetId,
+  isSelected,
+  isDragging,
+  onDragStart: _onDragStart,
+  onDragOver: _onDragOver,
+  onDrop: _onDrop,
+  onClick: _onClick,
+  onKeyDown: _onKeyDown,
+}: {
+  child: React.ReactElement
+  widgetId: number | undefined
+  isSelected: boolean
+  isDragging: boolean
+  onDragStart: (e: React.DragEvent, id: number) => void
+  onDragOver: (e: React.DragEvent, w: Widget) => void
+  onDrop: (e: React.DragEvent) => void
+  onClick: (id: number) => void
+  onKeyDown: (e: React.KeyboardEvent, id: number) => void
+}) {
+  return (
+    <div
+      data-widget-id={widgetId}
+      draggable={true}
+      onDragStart={(e) => _onDragStart(e, widgetId!)}
+      onDragOver={(e) => _onDragOver(e, child.props.widget)}
+      onDrop={_onDrop}
+      onClick={() => _onClick(widgetId!)}
+      onKeyDown={(e) => _onKeyDown(e as React.KeyboardEvent, widgetId!)}
+      className={`${child.props.className || ''} ${isSelected ? 'ring-2 ring-blue-400 shadow-lg' : ''} ${isDragging ? 'opacity-50 scale-95' : ''}`}
+    >
+      {child}
+    </div>
+  )
+}
+
 export default function GridDragDrop({ widgets, onReorder, children }: GridDragDropProps) {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const dragRef = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null)
@@ -130,18 +172,20 @@ export default function GridDragDrop({ widgets, onReorder, children }: GridDragD
           const isSelected = selectedId === widgetId
           const isDragging = dragRef.current?.id === widgetId
 
-          // Wrap each widget with drag handlers
-          return React.cloneElement(child as React.ReactElement, {
-            ...child.props,
-            'data-widget-id': widgetId,
-            draggable: true,
-            onDragStart: (e: React.DragEvent) => handleDragStart(e, widgetId),
-            onDragOver: (e: React.DragEvent) => handleDragOver(e, child.props.widget),
-            onDrop: handleDrop,
-            onClick: () => handleWidgetClick(widgetId),
-            onKeyDown: (e: React.KeyboardEvent) => handleKeyDown(e, widgetId),
-            className: `${child.props.className || ''} ${isSelected ? 'ring-2 ring-blue-400 shadow-lg' : ''} ${isDragging ? 'opacity-50 scale-95' : ''}`,
-          })
+          // Wrap each widget with drag handlers using the wrapper component pattern
+          return (
+            <WidgetWrapper
+              child={child}
+              widgetId={widgetId}
+              isSelected={isSelected}
+              isDragging={isDragging}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onClick={handleWidgetClick}
+              onKeyDown={handleKeyDown}
+            />
+          )
         })}
       </div>
 
