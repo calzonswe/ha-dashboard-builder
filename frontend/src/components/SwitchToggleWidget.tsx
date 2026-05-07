@@ -36,7 +36,7 @@ export default function SwitchToggleWidget({ widget, onDelete }: { widget: Widge
 
     setIsToggling(true)
     try {
-      await fetch('/api/api/ha/service', {
+      await fetch('/api/ha/service', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
