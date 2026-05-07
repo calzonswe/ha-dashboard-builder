@@ -4,6 +4,7 @@ Provides endpoints for creating, listing, and managing dashboards
 and their associated widgets/cards.
 """
 
+from datetime import datetime
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -56,7 +57,13 @@ def create_dashboard(req: DashboardCreateRequest, db: Session = Depends(get_db))
 
     POST /api/v1/dashboards -> 201 { "id": N, "name": "...", ... }
     """
-    page = Page(name=req.name, description=req.description or "")
+    now = datetime.utcnow()
+    page = Page(
+        name=req.name,
+        description=req.description or "",
+        created_at=now,
+        updated_at=now,
+    )
     db.add(page)
     db.commit()
     db.refresh(page)
@@ -77,6 +84,7 @@ def update_dashboard(dashboard_id: int, req: DashboardUpdateRequest, db: Session
         page.name = req.name
     if req.description is not None:
         page.description = req.description
+    page.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(page)
     return DashboardResponse(id=page.id, name=page.name or "", description=page.description if page.description != "" else None)
