@@ -115,7 +115,7 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
   /** Add a card to the dashboard (optimistic update, no server call yet) */
   const addCard = useCallback(
     (card: Omit<DashboardCard, 'id'>) => {
-      const newCard: DashboardCard = { ...card, id: `card-${Date.now()}` }
+      const newCard: DashboardCard = { ...card, id: `card-${crypto.randomUUID()}` }
       setCards((prev) => [...prev, newCard])
     },
     [],
