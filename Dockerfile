@@ -26,8 +26,8 @@ WORKDIR /app
 # Copy the virtual environment from builder
 COPY --from=builder /app/.venv /app/.venv
 
-# Copy application source code
-COPY app/ ./app/
+# Copy application source code from backend
+COPY backend/app/ ./app/
 
 # Set runtime environment variables
 ENV PATH="/app/.venv/bin:$PATH" \
