@@ -46,37 +46,55 @@ class MockHAAPI:
             {
                 "entity_id": "sensor.bedroom_temperature",
                 "state": "21.0",
-                "attributes": {"friendly_name": "Bedroom Temperature", "unit_of_measurement": "°C"},
+                "attributes": {
+                    "friendly_name": "Bedroom Temperature",
+                    "unit_of_measurement": "°C",
+                },
                 "last_changed": "2026-05-06T10:01:00Z",
             },
             {
                 "entity_id": "sensor.outdoor_temperature",
                 "state": "18.3",
-                "attributes": {"friendly_name": "Outdoor Temperature", "unit_of_measurement": "°C"},
+                "attributes": {
+                    "friendly_name": "Outdoor Temperature",
+                    "unit_of_measurement": "°C",
+                },
                 "last_changed": "2026-05-06T10:02:00Z",
             },
             {
                 "entity_id": "sensor.living_room_humidity",
                 "state": "45.2",
-                "attributes": {"friendly_name": "Living Room Humidity", "unit_of_measurement": "%"},
+                "attributes": {
+                    "friendly_name": "Living Room Humidity",
+                    "unit_of_measurement": "%",
+                },
                 "last_changed": "2026-05-06T10:03:00Z",
             },
             {
                 "entity_id": "sensor.bedroom_humidity",
                 "state": "48.7",
-                "attributes": {"friendly_name": "Bedroom Humidity", "unit_of_measurement": "%"},
+                "attributes": {
+                    "friendly_name": "Bedroom Humidity",
+                    "unit_of_measurement": "%",
+                },
                 "last_changed": "2026-05-06T10:04:00Z",
             },
             {
                 "entity_id": "sensor.kitchen_temperature",
                 "state": "23.1",
-                "attributes": {"friendly_name": "Kitchen Temperature", "unit_of_measurement": "°C"},
+                "attributes": {
+                    "friendly_name": "Kitchen Temperature",
+                    "unit_of_measurement": "°C",
+                },
                 "last_changed": "2026-05-06T10:05:00Z",
             },
             {
                 "entity_id": "light.living_room_ceiling",
                 "state": "on",
-                "attributes": {"friendly_name": "Living Room Ceiling Light", "brightness": 150},
+                "attributes": {
+                    "friendly_name": "Living Room Ceiling Light",
+                    "brightness": 150,
+                },
                 "last_changed": "2026-05-06T09:30:00Z",
             },
             {
@@ -166,7 +184,10 @@ class MockHAAPI:
             {
                 "entity_id": "climate.living_room",
                 "state": "heat",
-                "attributes": {"friendly_name": "Living Room Thermostat", "temperature": 21.0},
+                "attributes": {
+                    "friendly_name": "Living Room Thermostat",
+                    "temperature": 21.0,
+                },
                 "last_changed": "2026-05-06T10:00:00Z",
             },
             {
@@ -238,43 +259,64 @@ class MockHAAPI:
             {
                 "entity_id": "sensor.living_room_co2",
                 "state": "420.5",
-                "attributes": {"friendly_name": "Living Room CO2", "unit_of_measurement": "ppm"},
+                "attributes": {
+                    "friendly_name": "Living Room CO2",
+                    "unit_of_measurement": "ppm",
+                },
                 "last_changed": "2026-05-06T10:00:00Z",
             },
             {
                 "entity_id": "sensor.bedroom_co2",
                 "state": "380.2",
-                "attributes": {"friendly_name": "Bedroom CO2", "unit_of_measurement": "ppm"},
+                "attributes": {
+                    "friendly_name": "Bedroom CO2",
+                    "unit_of_measurement": "ppm",
+                },
                 "last_changed": "2026-05-06T10:00:00Z",
             },
             {
                 "entity_id": "sensor.living_room_pm25",
                 "state": "12.3",
-                "attributes": {"friendly_name": "Living Room PM2.5", "unit_of_measurement": "µg/m³"},
+                "attributes": {
+                    "friendly_name": "Living Room PM2.5",
+                    "unit_of_measurement": "µg/m³",
+                },
                 "last_changed": "2026-05-06T10:00:00Z",
             },
             {
                 "entity_id": "sensor.kitchen_pm25",
                 "state": "8.7",
-                "attributes": {"friendly_name": "Kitchen PM2.5", "unit_of_measurement": "µg/m³"},
+                "attributes": {
+                    "friendly_name": "Kitchen PM2.5",
+                    "unit_of_measurement": "µg/m³",
+                },
                 "last_changed": "2026-05-06T10:00:00Z",
             },
             {
                 "entity_id": "sensor.living_room_battery",
                 "state": "87.5",
-                "attributes": {"friendly_name": "Living Room Sensor Battery", "unit_of_measurement": "%"},
+                "attributes": {
+                    "friendly_name": "Living Room Sensor Battery",
+                    "unit_of_measurement": "%",
+                },
                 "last_changed": "2026-05-06T10:00:00Z",
             },
             {
                 "entity_id": "sensor.bedroom_battery",
                 "state": "92.3",
-                "attributes": {"friendly_name": "Bedroom Sensor Battery", "unit_of_measurement": "%"},
+                "attributes": {
+                    "friendly_name": "Bedroom Sensor Battery",
+                    "unit_of_measurement": "%",
+                },
                 "last_changed": "2026-05-06T10:00:00Z",
             },
             {
                 "entity_id": "sensor.kitchen_humidity",
                 "state": "55.8",
-                "attributes": {"friendly_name": "Kitchen Humidity", "unit_of_measurement": "%"},
+                "attributes": {
+                    "friendly_name": "Kitchen Humidity",
+                    "unit_of_measurement": "%",
+                },
                 "last_changed": "2026-05-06T10:06:00Z",
             },
         ]

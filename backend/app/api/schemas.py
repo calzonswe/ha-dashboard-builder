@@ -845,7 +845,14 @@ class LovelaceCardValidator:
             return False, f"Unknown card type: {card_type}"
 
         # Validate entity cards have entity field
-        entity_cards = ["entity", "picture-entity", "thermostat", "gauge", "button", "camera"]
+        entity_cards = [
+            "entity",
+            "picture-entity",
+            "thermostat",
+            "gauge",
+            "button",
+            "camera",
+        ]
         if card_type in entity_cards:
             entity = card_config.get("entity")
             if not entity:

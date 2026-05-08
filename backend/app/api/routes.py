@@ -89,7 +89,11 @@ async def connect_to_ha(request: HAConnectionRequest):
             host=info["host"],
             port=info["port"],
             entities=discovered_count,
-            message=f"Connected and discovered {discovered_count} entities" if discovered_count > 0 else "Connected successfully",
+            message=(
+                f"Connected and discovered {discovered_count} entities"
+                if discovered_count > 0
+                else "Connected successfully"
+            ),
         )
     except HAConnectionError as exc:
         logger.error(f"HA connection failed: {exc}")

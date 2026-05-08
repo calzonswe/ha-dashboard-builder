@@ -100,7 +100,11 @@ def reload_settings(db: Session = Depends(get_db)):
     llm_model = settings_dict.get("llm_model", "llama3.2")
     llm_base_url = settings_dict.get(
         "llm_base_url",
-        "http://localhost:11434" if llm_provider == "ollama" else "http://localhost:1234/v1",
+        (
+            "http://localhost:11434"
+            if llm_provider == "ollama"
+            else "http://localhost:1234/v1"
+        ),
     )
 
     try:
@@ -111,6 +115,8 @@ def reload_settings(db: Session = Depends(get_db)):
         )
         set_llm_service(new_llm)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to reload LLM settings: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to reload LLM settings: {e}"
+        )
 
     return {"message": "Settings reloaded successfully"}

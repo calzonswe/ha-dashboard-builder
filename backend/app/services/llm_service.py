@@ -29,8 +29,10 @@ async def retry_with_backoff(
         except httpx.HTTPError as e:
             last_exception = e
             if attempt < max_retries - 1:
-                delay = base_delay * (2 ** attempt)
-                logger.warning(f"LLM request failed (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {delay}s...")
+                delay = base_delay * (2**attempt)
+                logger.warning(
+                    f"LLM request failed (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {delay}s..."
+                )
                 await asyncio.sleep(delay)
             else:
                 logger.error(f"LLM request failed after {max_retries} attempts: {e}")
@@ -138,7 +140,9 @@ class LMStudioProvider(LLMProvider):
                 )
                 response.raise_for_status()
                 data = response.json()
-                return data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                return (
+                    data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                )
 
         try:
             return await retry_with_backoff(_make_request)

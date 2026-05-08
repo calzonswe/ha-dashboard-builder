@@ -41,7 +41,9 @@ async def lifespan(app: FastAPI):
         discovery_service = EntityDiscoveryService(ha_client=ha_client)
 
         # Start cache refresh service
-        cache_refresh_service = CacheRefreshService(discovery_service, interval_seconds=60)
+        cache_refresh_service = CacheRefreshService(
+            discovery_service, interval_seconds=60
+        )
         await cache_refresh_service.start()
 
         # Start HA event listener for real-time state updates
@@ -53,7 +55,9 @@ async def lifespan(app: FastAPI):
         await event_listener.start()
     except Exception as e:
         print(f"[WARNING] Home Assistant connection failed at startup: {e}")
-        print("[INFO] API will start without HA — entities will be unavailable until HA is reachable")
+        print(
+            "[INFO] API will start without HA — entities will be unavailable until HA is reachable"
+        )
         ha_client = None
         discovery_service = None
         cache_refresh_service = None
@@ -70,6 +74,7 @@ async def lifespan(app: FastAPI):
         ),
     )
     from app.services.llm_service import set_llm_service
+
     set_llm_service(llm_service)
 
     yield

@@ -33,7 +33,8 @@ class EntityCache:
     def _ensure_schema(self):
         """Create tables if they don't exist."""
         conn = self._get_conn()
-        conn.execute("""
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS entities (
                 entity_id TEXT PRIMARY KEY,
                 name TEXT DEFAULT '',
@@ -47,8 +48,10 @@ class EntityCache:
                 last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
-        conn.execute("""
+        """
+        )
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS state_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 entity_id TEXT NOT NULL,
@@ -57,7 +60,8 @@ class EntityCache:
                 changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (entity_id) REFERENCES entities(entity_id)
             )
-        """)
+        """
+        )
         conn.commit()
 
     def get_all_entities(self) -> List[Dict[str, Any]]:

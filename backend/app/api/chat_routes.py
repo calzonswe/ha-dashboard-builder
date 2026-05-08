@@ -25,7 +25,9 @@ class ChatRequest(BaseModel):
 
     messages: list[ChatMessage]
     model: str | None = None
-    context: dict[str, Any] | None = None  # Optional: entity states, selected cards, etc.
+    context: dict[str, Any] | None = (
+        None  # Optional: entity states, selected cards, etc.
+    )
 
 
 class ChatResponse(BaseModel):
@@ -51,7 +53,7 @@ async def generate_chat_stream(
             {
                 "role": "system",
                 "content": f"You are a helpful assistant for a Home Assistant dashboard builder. {context_str}",
-            }
+            },
         )
 
     try:
@@ -96,7 +98,7 @@ async def send_chat_message(request: ChatRequest) -> ChatResponse:
                 {
                     "role": "system",
                     "content": f"You are a helpful assistant for a Home Assistant dashboard builder. {context_str}",
-                }
+                },
             )
 
         response = await llm.chat(messages, request.model)
