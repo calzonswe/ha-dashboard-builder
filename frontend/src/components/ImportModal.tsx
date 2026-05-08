@@ -181,14 +181,14 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImport }) 
                 <>
                   <p className="text-sm font-medium text-green-700 mb-2">✓ Valid Lovelace Configuration</p>
                   <div className="space-y-1 text-sm text-green-600">
-                    <p><strong>Title:</strong> {importResult.dashboard.title}</p>
+                    <p><strong>Title:</strong> {importResult.dashboard.name}</p>
                     <p><strong>Cards:</strong> {importResult.dashboard.cards.length} card{importResult.dashboard.cards.length !== 1 ? 's' : ''}</p>
                     {importResult.dashboard.cards.length > 0 && (
                       <>
                         <p className="mt-2 font-medium">Cards preview:</p>
                         <ul className="list-disc list-inside space-y-0.5 mt-1">
-                          {importResult.dashboard.cards.slice(0, 10).map((card) => (
-                            <li key={card.id}>
+                          {importResult.dashboard.cards.slice(0, 10).map((card, i) => (
+                            <li key={`${card.id}-${i}`}>
                               <span className="font-mono">{card.entity_id}</span>
                               {' — '}
                               <span className="text-gray-500">{card.config?.type || 'state'}</span>

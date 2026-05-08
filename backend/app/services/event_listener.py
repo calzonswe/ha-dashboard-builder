@@ -47,7 +47,7 @@ class HAEventListener:
     async def _take_snapshot(self):
         """Fetch current states and store as the previous snapshot."""
         try:
-            states = self.ha_client.get_states()
+            states = await asyncio.to_thread(self.ha_client.get_states)
             for state in states:
                 entity_id = state.get("entity_id", "")
                 if entity_id:
@@ -74,7 +74,7 @@ class HAEventListener:
     async def _check_for_changes(self):
         """Compare current states against previous snapshot and broadcast differences."""
         try:
-            states = self.ha_client.get_states()
+            states = await asyncio.to_thread(self.ha_client.get_states)
         except Exception as e:
             logger.error(f"Failed to fetch states: {e}")
             return
@@ -103,7 +103,7 @@ class HAEventListener:
                         "entity_id": entity_id,
                         "state": current_state_val,
                         "attributes": attributes,
-                        "last_changed": state.get("last_changed_at"),
+                        "last_changed": state.get("last_changed"),
                     }
                 )
 

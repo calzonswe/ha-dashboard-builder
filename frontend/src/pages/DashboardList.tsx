@@ -27,10 +27,8 @@ const DashboardList: React.FC = () => {
   const handleCreate = async () => {
     try {
       const newDashboard = await createDashboard({
-        title: 'New Dashboard',
+        name: 'New Dashboard',
         description: '',
-        cards: [],
-        layout: [],
       })
       navigate(`/dashboard/${newDashboard.id}`)
     } catch (err) {
@@ -113,7 +111,7 @@ const DashboardList: React.FC = () => {
             >
               <div className="flex items-start justify-between mb-3">
                 <h3 className="text-lg font-semibold text-gray-900 truncate flex-1 pr-2">
-                  {dashboard.title}
+                  {dashboard.name}
                 </h3>
                 <button
                   onClick={(e) => {
@@ -137,9 +135,6 @@ const DashboardList: React.FC = () => {
 
               <div className="flex items-center justify-between text-xs text-gray-400">
                 <span>{(dashboard.cards || []).length} card{(dashboard.cards || []).length !== 1 ? 's' : ''}</span>
-                {dashboard.updated_at && (
-                  <span>Updated {new Date(dashboard.updated_at).toLocaleDateString()}</span>
-                )}
               </div>
 
               {/* Hover overlay */}

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useWebSocket } from '../hooks/useWebSocket'
 
 interface Widget {

@@ -88,7 +88,7 @@ function convertHACardsToCards(cards: Record<string, unknown>[]): DashboardCard[
       config,
     } as DashboardCard
   }).filter((card): card is DashboardCard => {
-    // Filter out cards with invalid entity IDs (we return null for those)
+    if (!card) return false
     return isValidEntityId(card.entity_id)
   })
 }
@@ -177,10 +177,9 @@ export function importFromLovelace(jsonString: string): {
     return {
       dashboard: {
         id: undefined,
-        title,
+        name: title,
         description: 'Imported from Home Assistant Lovelace configuration',
         cards,
-        layout: [],
       },
     }
   } catch (err) {

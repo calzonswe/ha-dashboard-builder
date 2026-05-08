@@ -104,15 +104,15 @@ export function exportToLovelace(dashboard: DashboardConfig): string {
   }
 
   const viewConfig: Record<string, unknown> = {
-    title: dashboard.title || 'Home Assistant Dashboard',
+    title: dashboard.name || 'Home Assistant Dashboard',
     path: 'default',
     icon: `mdi:${iconMap[bestDomain] || 'home'}`,
     cards: lovelaceCards,
-    badges: [], // No badges in our model currently
+    badges: [],
   }
 
   const lovelaceConfig = {
-    title: dashboard.title || 'Home Assistant Dashboard',
+    title: dashboard.name || 'Home Assistant Dashboard',
     views: [viewConfig],
   }
 
@@ -124,10 +124,10 @@ export function exportToLovelace(dashboard: DashboardConfig): string {
  */
 export function exportToLovelaceYaml(dashboard: DashboardConfig): string {
   const lines: string[] = []
-  lines.push(`title: '${dashboard.title}'`)
+  lines.push(`title: '${dashboard.name}'`)
   lines.push('')
   lines.push('views:')
-  lines.push(`  - title: '${dashboard.title}'`)
+  lines.push(`  - title: '${dashboard.name}'`)
   lines.push('    path: default')
 
   // Collect domains for icon

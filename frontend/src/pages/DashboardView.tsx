@@ -12,6 +12,7 @@ import DashboardCanvas from '../components/DashboardCanvas'
 import CardConfigModal from '../components/CardConfigModal'
 import ExportModal from '../components/ExportModal'
 import ImportModal from '../components/ImportModal'
+import SettingsModal from '../components/SettingsModal'
 
 const DashboardView: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -29,7 +30,7 @@ const DashboardView: React.FC = () => {
   } = useDashboard(dashboardId)
 
   // Real-time entity states via SSE
-  const { entities: liveStates, loading: statesLoading } = useEntityStates()
+  const { entities: liveStates } = useEntityStates()
 
   // Entity list for sidebar (available entities from Home Assistant)
   const { entities: availableEntities, loading: entitiesLoading } = useEntities()
@@ -43,6 +44,9 @@ const DashboardView: React.FC = () => {
   // Export/Import modal state
   const [exportModalOpen, setExportModalOpen] = useState(false)
   const [importModalOpen, setImportModalOpen] = useState(false)
+
+  // Settings modal state
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false)
 
   // ─── Save handler ────────────────────────────────────────────────
 
@@ -80,8 +84,6 @@ const DashboardView: React.FC = () => {
       const newDashboard: DashboardConfig = {
         ...importedDashboard,
         id: undefined,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       }
 
       // Save cards to the server (creates a new dashboard)
@@ -143,7 +145,7 @@ const DashboardView: React.FC = () => {
 
   // ─── Loading / error states ──────────────────────────────────────
 
-  const isLoading = dashboardLoading || statesLoading || entitiesLoading
+  const isLoading = dashboardLoading || entitiesLoading
   const hasError = dashboardError || saveError
 
   if (isLoading) {
@@ -176,6 +178,7 @@ const DashboardView: React.FC = () => {
           onPreview={handlePreview}
           onExport={handleExport}
           onImport={handleImport}
+          onSettings={() => setSettingsModalOpen(true)}
         />
 
         {/* Error banner */}
@@ -232,6 +235,12 @@ const DashboardView: React.FC = () => {
           isOpen={importModalOpen}
           onClose={() => setImportModalOpen(false)}
           onImport={handleConfirmImport}
+        />
+
+        {/* Settings modal */}
+        <SettingsModal
+          isOpen={settingsModalOpen}
+          onClose={() => setSettingsModalOpen(false)}
         />
       </div>
     </ResponsiveLayout>

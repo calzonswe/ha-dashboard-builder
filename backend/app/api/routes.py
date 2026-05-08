@@ -1,5 +1,6 @@
 """API routes for Home Assistant connection and entity discovery."""
 
+import asyncio
 import logging
 from typing import Optional
 
@@ -23,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ha", tags=["Home Assistant"])
 
-# Global state for the current HA connection and entity cache
 _ha_client: Optional[HAAPI] = None
 _entity_service: Optional[EntityDiscoveryService] = None
 
@@ -49,10 +49,7 @@ def set_ha_connection(host: str, port: int, token: str):
     """Set the global HA client and entity service."""
     global _ha_client, _entity_service
 
-    # Create a new HAAPI instance
     _ha_client = HAAPI(host=host, port=port, token=token)
-
-    # Create the entity discovery service with the new client
     _entity_service = EntityDiscoveryService(ha_client=_ha_client)
 
 
@@ -74,8 +71,8 @@ async def connect_to_ha(request: HAConnectionRequest):
     try:
         set_ha_connection(host=request.host, port=request.port, token=request.token)
 
-        # Test the connection
-        info = _ha_client.test_connection()  # type: ignore[reportOptionalMemberAccess]
+        client = get_ha_client()
+        info = await asyncio.to_thread(client.test_connection)
 
         return HAConnectionResponse(
             status="success",
@@ -105,8 +102,8 @@ async def connect_to_ha(request: HAConnectionRequest):
 )
 async def discover_entities():
     try:
-        service = get_entity_service()  # type: ignore[reportOptionalMemberCall]
-        summary = service.discover()
+        service = get_entity_service()
+        summary = await asyncio.to_thread(service.discover)
 
         return EntityDiscoveryResponse(
             status="success",
@@ -134,8 +131,8 @@ async def discover_entities():
 )
 async def get_cached_entities():
     try:
-        service = get_entity_service()  # type: ignore[reportOptionalMemberCall]
-        entities = service.get_cached_entities()
+        service = get_entity_service()
+        entities = await asyncio.to_thread(service.get_cached_entities)
 
         return EntityListResponse(
             entities=[CachedEntity(**e) for e in entities],
@@ -160,21 +157,22 @@ async def get_cached_entities():
 )
 async def get_entity(entity_id: str):
     try:
-        client = get_ha_client()  # type: ignore[reportOptionalMemberCall]
-        state = client.get_state(entity_id)
+        client = get_ha_client()
+        state = await asyncio.to_thread(client.get_state, entity_id)
 
         if not state:
             raise HTTPException(
                 status_code=404, detail=f"Entity '{entity_id}' not found"
             )
 
+        attributes = state.get("attributes", {})
         return CachedEntity(
             entity_id=state["entity_id"],
             domain=state.get("domain", ""),
             entity_type=state.get("entity_type", ""),
             name=state.get("name", state["entity_id"]),
             state=str(state.get("state", "")),
-            unit_of_measurement=state.get("unit_of_measurement"),
+            unit_of_measurement=attributes.get("unit_of_measurement"),
         )
     except HTTPException:
         raise
@@ -197,8 +195,8 @@ async def get_entity(entity_id: str):
 )
 async def search_entities(request: SearchRequest):
     try:
-        service = get_entity_service()  # type: ignore[reportOptionalMemberCall]
-        results = service.search_entities(request.query)
+        service = get_entity_service()
+        results = await asyncio.to_thread(service.search_entities, request.query)
 
         return EntityListResponse(
             entities=[CachedEntity(**e) for e in results],
@@ -225,8 +223,9 @@ async def search_entities(request: SearchRequest):
 )
 async def call_ha_service(request: ServiceCallRequest):
     try:
-        client = get_ha_client()  # type: ignore[reportOptionalMemberCall]
-        result = client.call_service(
+        client = get_ha_client()
+        result = await asyncio.to_thread(
+            client.call_service,
             domain=request.domain,
             service=request.service,
             service_data=request.service_data,
@@ -263,7 +262,7 @@ async def get_ha_status():
         return {"connected": False}
 
     try:
-        info = _ha_client.test_connection()  # type: ignore[reportOptionalMemberAccess]
+        info = await asyncio.to_thread(_ha_client.test_connection)
         return {
             "connected": True,
             "host": info["host"],

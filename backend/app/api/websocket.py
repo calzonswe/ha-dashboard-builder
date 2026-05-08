@@ -104,7 +104,16 @@ async def websocket_entities(websocket: WebSocket):
                 await websocket.send_json({"type": "pong"})
             elif data.startswith("subscribe:"):
                 # Client can subscribe to specific entity updates
-                raw_entity_id = data.split(":")[1]
+                parts = data.split(":", 1)
+                if len(parts) < 2 or not parts[1]:
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "message": "Missing entity_id in subscribe command",
+                        }
+                    )
+                    continue
+                raw_entity_id = parts[1]
                 if not validate_entity_id(raw_entity_id):
                     await websocket.send_json(
                         {
@@ -120,7 +129,16 @@ async def websocket_entities(websocket: WebSocket):
                 )
             elif data.startswith("unsubscribe:"):
                 # Client can unsubscribe from specific entities
-                raw_entity_id = data.split(":")[1]
+                parts = data.split(":", 1)
+                if len(parts) < 2 or not parts[1]:
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "message": "Missing entity_id in unsubscribe command",
+                        }
+                    )
+                    continue
+                raw_entity_id = parts[1]
                 if not validate_entity_id(raw_entity_id):
                     await websocket.send_json(
                         {

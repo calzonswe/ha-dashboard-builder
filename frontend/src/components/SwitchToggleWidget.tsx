@@ -36,13 +36,13 @@ export default function SwitchToggleWidget({ widget, onDelete }: { widget: Widge
 
     setIsToggling(true)
     try {
-      await fetch('/api/ha/service', {
+      await fetch('/api/ha/services/call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          domain: widget.card_type === 'light' ? 'light' : 'switch',
-          service: widget.card_type === 'light' ? 'toggle' : 'turn_on',
-          target: { entity_id: widget.entity_id },
+          domain: 'switch',
+          service: 'turn_on',
+          service_data: { entity_id: widget.entity_id },
         }),
       })
 

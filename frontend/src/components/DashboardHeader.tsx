@@ -9,6 +9,7 @@ interface DashboardHeaderProps {
   onPreview: () => void
   onExport?: () => void
   onImport?: () => void
+  onSettings?: () => void
 }
 
 const DOMAIN_ICONS: Record<string, string> = {
@@ -40,16 +41,17 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onPreview,
   onExport,
   onImport,
+  onSettings,
 }) => {
   const navigate = useNavigate()
-  const [title, setTitle] = React.useState(dashboard?.title || '')
+  const [title, setTitle] = React.useState(dashboard?.name || '')
   const [isEditing, setIsEditing] = React.useState(false)
   const [showExportMenu, setShowExportMenu] = React.useState(false)
   const menuRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
-    if (dashboard && dashboard.title !== title) {
-      setTitle(dashboard.title)
+    if (dashboard && dashboard.name !== title) {
+      setTitle(dashboard.name)
     }
   }, [dashboard])
 
@@ -98,15 +100,13 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
   // Collect entity domains for the info badge
   const domainCounts: Record<string, number> = {}
-  React.useMemo(() => {
-    if (dashboard?.cards) {
-      for (const card of dashboard.cards) {
-        const parts = (card.entity_id || '').split('.')
-        const domain = parts[0] || 'unknown'
-        domainCounts[domain] = (domainCounts[domain] || 0) + 1
-      }
+  if (dashboard?.cards) {
+    for (const card of dashboard.cards) {
+      const parts = (card.entity_id || '').split('.')
+      const domain = parts[0] || 'unknown'
+      domainCounts[domain] = (domainCounts[domain] || 0) + 1
     }
-  }, [dashboard?.cards])
+  }
 
   // Pick the most common domain for icon
   let bestDomain = 'home'
@@ -171,7 +171,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               title="Click to edit title"
             >
               <span className="flex-shrink-0">{DOMAIN_ICONS[bestDomain] || '🏠'}</span>
-              <span className="truncate">{loading ? 'Loading...' : dashboard?.title || 'Untitled Dashboard'}</span>
+              <span className="truncate">{loading ? 'Loading...' : dashboard?.name || 'Untitled Dashboard'}</span>
             </h1>
           )}
 
@@ -282,7 +282,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               title="Click to edit title"
             >
               {DOMAIN_ICONS[bestDomain] || '🏠'}{' '}
-              {loading ? 'Loading...' : dashboard?.title || 'Untitled Dashboard'}
+              {loading ? 'Loading...' : dashboard?.name || 'Untitled Dashboard'}
             </h1>
           )}
 
@@ -357,6 +357,17 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             >
               {loading ? 'Saving...' : 'Save'}
             </button>
+            {onSettings && (
+              <button
+                onClick={onSettings}
+                className="p-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                title="Settings"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </div>

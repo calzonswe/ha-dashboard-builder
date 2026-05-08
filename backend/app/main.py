@@ -7,12 +7,13 @@ from app.config import settings
 from app.database import init_db
 from app.api.routes import router as ha_router
 from app.api.dashboard_routes import router as dashboard_router
+from app.api.settings_routes import router as settings_router
+from app.api.chat_routes import router as chat_router
 from app.api.websocket import router as websocket_router, manager as websocket_manager
 from app.services.entity_discovery import EntityDiscoveryService
 from app.services.ha_client import HAAPI
 from app.services.cache_refresh import CacheRefreshService
 from app.services.event_listener import HAEventListener
-
 
 # Global services
 ha_client = None
@@ -111,6 +112,8 @@ app.add_middleware(
 # Include API routers
 app.include_router(ha_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api/v1")
+app.include_router(settings_router, prefix="/api/v1")
+app.include_router(chat_router, prefix="/api")
 app.include_router(websocket_router, prefix="/api")
 
 

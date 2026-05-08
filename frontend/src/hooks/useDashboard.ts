@@ -17,10 +17,6 @@ interface UseDashboardResult {
   updateCardConfig: (cardId: string, config: Partial<CardConfig>) => void
 }
 
-/**
- * Hook that manages dashboard lifecycle and state.
- * Fetches dashboard config from API on mount, handles save operations.
- */
 export function useDashboard(dashboardId: string): UseDashboardResult {
   const [dashboard, setDashboard] = useState<DashboardConfig | null>(null)
   const [cards, setCards] = useState<DashboardCard[]>([])
@@ -28,7 +24,6 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  /** Load dashboard config from API */
   const loadDashboard = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -47,18 +42,16 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
     loadDashboard()
   }, [loadDashboard])
 
-  /** Save current cards to the server via bulk card update endpoint */
   const saveCards = useCallback(
     async (newCards: DashboardCard[]) => {
       setSaving(true)
       setError(null)
       try {
-        // Map frontend DashboardCard[] → backend CardPayload[]
         const payload = newCards.map((c) => ({
-          id: c.id.startsWith('card-') ? null : parseInt(c.id, 10),
-          card_type: c.config?.type || 'state',
+          id: c.id.startsWith('card-') || !/^\d+$/.test(c.id) ? null : parseInt(c.id, 10),
+          card_type: c.card_type || c.config?.type || 'state',
           entity_id: c.entity_id || undefined,
-          title: c.config?.title || undefined,
+          title: c.title || c.config?.title || undefined,
           config: { ...c.config } as Record<string, unknown>,
           x: c.x,
           y: c.y,
@@ -68,26 +61,21 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
 
         const result = await updateDashboardCards(dashboardId, payload)
 
-        // Merge server-assigned IDs back into local state.
-        // result.cards[i] corresponds to newCards[i] by position.
         setCards((prev) => {
           const updated = prev.map((c) => {
             if (c.id.startsWith('card-')) {
-              // Temp ID — match by position in the saved array
               const idx = newCards.findIndex((nc) => nc.id === c.id)
-              const serverCard = result.cards[idx]
+              const serverCard = idx >= 0 ? result.cards[idx] : null
               return serverCard ? { ...c, id: String(serverCard.id) } : c
             }
-            // Existing card with numeric ID — match by ID
             const serverCard = result.cards.find(
               (sc) => sc.id === parseInt(c.id, 10),
             )
             return serverCard ? { ...c, id: String(serverCard.id) } : c
           })
-          // Add newly created cards that don't exist locally yet
-          const localIds = new Set(updated.map((u) => u.id))
+          const existingIds = new Set(updated.map((u) => u.id))
           result.cards.forEach((sc) => {
-            if (!localIds.has(String(sc.id))) {
+            if (!existingIds.has(String(sc.id))) {
               updated.push({
                 id: String(sc.id),
                 entity_id: '',
@@ -100,7 +88,6 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
           })
           return updated
         })
-        setDashboard((prev) => (prev ? { ...prev, cards: newCards } : null))
       } catch (err) {
         const errObj = err instanceof Error ? err : new Error(String(err))
         setError(errObj)
@@ -112,7 +99,6 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
     [dashboardId],
   )
 
-  /** Add a card to the dashboard (optimistic update, no server call yet) */
   const addCard = useCallback(
     (card: Omit<DashboardCard, 'id'>) => {
       const newCard: DashboardCard = { ...card, id: `card-${crypto.randomUUID()}` }
@@ -121,7 +107,6 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
     [],
   )
 
-  /** Remove a card from the dashboard */
   const removeCard = useCallback(
     (cardId: string) => {
       setCards((prev) => prev.filter((c) => c.id !== cardId))
@@ -129,7 +114,6 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
     [],
   )
 
-  /** Update configuration for an existing card */
   const updateCardConfig = useCallback(
     (cardId: string, config: Partial<CardConfig>) => {
       setCards((prev) =>

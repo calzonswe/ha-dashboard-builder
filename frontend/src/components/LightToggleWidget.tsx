@@ -17,8 +17,7 @@ interface Widget {
 export default function LightToggleWidget({ widget, onDelete }: { widget: Widget; onDelete: () => void }) {
   const { states } = useEntityStates()
   const { addToast } = useToast()
-  
-  // Get the current state from WebSocket context
+
   const entityData = widget.entity_id ? (states[widget.entity_id] || null) : null
   const currentState = entityData?.state || 'off'
   const [state, setState] = useState<'on' | 'off'>(currentState === 'on' ? 'on' : 'off')
@@ -26,7 +25,6 @@ export default function LightToggleWidget({ widget, onDelete }: { widget: Widget
   const [isToggling, setIsToggling] = useState(false)
   const [isAdjusting, setIsAdjusting] = useState(false)
 
-  // Sync local state when WebSocket reports a change
   useEffect(() => {
     if (widget.entity_id && states[widget.entity_id]) {
       setState(states[widget.entity_id].state as 'on' | 'off')
@@ -38,14 +36,16 @@ export default function LightToggleWidget({ widget, onDelete }: { widget: Widget
 
     setIsToggling(true)
     try {
-      await fetch('/api/ha/service', {
+      await fetch('/api/ha/services/call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           domain: 'light',
           service: state === 'on' ? 'turn_off' : 'turn_on',
-          target: { entity_id: widget.entity_id },
-          ...(state === 'off' && { data: { brightness } }),
+          service_data: {
+            entity_id: widget.entity_id,
+            ...(state === 'off' && { brightness: Math.round((brightness / 100) * 255) }),
+          },
         }),
       })
 
@@ -63,14 +63,16 @@ export default function LightToggleWidget({ widget, onDelete }: { widget: Widget
 
     setIsAdjusting(true)
     try {
-      await fetch('/api/ha/service', {
+      await fetch('/api/ha/services/call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           domain: 'light',
           service: 'turn_on',
-          target: { entity_id: widget.entity_id },
-          data: { brightness: value },
+          service_data: {
+            entity_id: widget.entity_id,
+            brightness: Math.round((value / 100) * 255),
+          },
         }),
       })
     } catch {
@@ -112,14 +114,14 @@ export default function LightToggleWidget({ widget, onDelete }: { widget: Widget
       {state === 'on' && (
         <div className="mb-2 sm:mb-3">
           <label htmlFor={`brightness-${widget.id}`} className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-            Brightness: {Math.round((brightness / 255) * 100)}%
+            Brightness: {brightness}%
           </label>
           <input
             id={`brightness-${widget.id}`}
             type="range"
             min={0}
-            max={255}
-            value={(brightness / 255) * 100}
+            max={100}
+            value={brightness}
             onChange={(e) => handleBrightness(Number(e.target.value))}
             className={`w-full h-6 sm:h-7 accent-yellow-500 ${isAdjusting ? 'opacity-70 cursor-not-allowed' : ''}`}
             disabled={isAdjusting}

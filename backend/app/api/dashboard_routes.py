@@ -43,7 +43,11 @@ def list_dashboards(db: Session = Depends(get_db)):
         DashboardResponse(
             id=page.id,
             name=page.name or "",
-            description=None,  # Page model doesn't have a description field yet
+            description=(
+                page.description
+                if page.description and page.description != ""
+                else None
+            ),
         )
         for page in pages
     ]
@@ -134,7 +138,7 @@ def get_dashboard(dashboard_id: int, db: Session = Depends(get_db)):
     return FullDashboardResponse(
         id=page.id,
         name=page.name or "",
-        description=None,
+        description=page.description if page.description != "" else None,
         cards=widgets,
     )
 
@@ -295,33 +299,42 @@ def bulk_update_cards(
     # Collect IDs of cards in the request for deletion logic
     incoming_ids = {c.id for c in req.cards if c.id is not None}
 
-    # Delete cards that are no longer in the request (and have an ID)
-    existing_cards = db.query(Card).filter(Card.page_id == dashboard_id).all()
-    for card in existing_cards:
-        if card.id not in incoming_ids:
-            db.delete(card)
+    try:
+        existing_cards = db.query(Card).filter(Card.page_id == dashboard_id).all()
+        for card in existing_cards:
+            if card.id not in incoming_ids:
+                db.delete(card)
 
-    # Process each card in the request — update or create
-    result_widgets = []
-    for card_req in req.cards:
-        if card_req.id is not None:
-            # Update existing card
-            card = (
-                db.query(Card)
-                .filter(Card.id == card_req.id, Card.page_id == dashboard_id)
-                .first()
-            )
-            if card:
-                card.card_type = card_req.card_type
-                card.entity_id = card_req.entity_id or ""
-                card.title = card_req.title or ""
-                card.config = card_req.config or {}
-                card.x = card_req.x
-                card.y = card_req.y
-                card.width = card_req.width
-                card.height = card_req.height
+        for card_req in req.cards:
+            if card_req.id is not None:
+                card = (
+                    db.query(Card)
+                    .filter(Card.id == card_req.id, Card.page_id == dashboard_id)
+                    .first()
+                )
+                if card:
+                    card.card_type = card_req.card_type
+                    card.entity_id = card_req.entity_id or ""
+                    card.title = card_req.title or ""
+                    card.config = card_req.config or {}
+                    card.x = card_req.x
+                    card.y = card_req.y
+                    card.width = card_req.width
+                    card.height = card_req.height
+                else:
+                    card = Card(
+                        page_id=dashboard_id,
+                        card_type=card_req.card_type,
+                        entity_id=card_req.entity_id or "",
+                        title=card_req.title or "",
+                        config=card_req.config or {},
+                        x=card_req.x,
+                        y=card_req.y,
+                        width=card_req.width,
+                        height=card_req.height,
+                    )
+                    db.add(card)
             else:
-                # Card ID doesn't belong to this dashboard — create new
                 card = Card(
                     page_id=dashboard_id,
                     card_type=card_req.card_type,
@@ -334,22 +347,11 @@ def bulk_update_cards(
                     height=card_req.height,
                 )
                 db.add(card)
-        else:
-            # New card — create it
-            card = Card(
-                page_id=dashboard_id,
-                card_type=card_req.card_type,
-                entity_id=card_req.entity_id or "",
-                title=card_req.title or "",
-                config=card_req.config or {},
-                x=card_req.x,
-                y=card_req.y,
-                width=card_req.width,
-                height=card_req.height,
-            )
-            db.add(card)
 
-    db.commit()
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to bulk update cards")
 
     # Fetch and return all cards for this dashboard (ordered by position)
     cards = (

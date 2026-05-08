@@ -21,7 +21,6 @@ export interface HAEvent {
   time_fired: string
 }
 
-/** A card placed on the dashboard canvas */
 export interface DashboardCard {
   id: string
   entity_id: string
@@ -30,11 +29,12 @@ export interface DashboardCard {
   width: number
   height: number
   config?: CardConfig
+  card_type?: string
+  title?: string
 }
 
-/** Per-card configuration overrides */
 export interface CardConfig {
-  type: 'state' | 'gauge' | 'slider' | 'button' | 'list'
+  type?: string
   title?: string
   color?: string
   theme?: 'light' | 'dark'
@@ -42,15 +42,11 @@ export interface CardConfig {
   [key: string]: unknown
 }
 
-/** Full dashboard configuration stored on the server */
 export interface DashboardConfig {
   id?: string
-  title: string
+  name: string
   description?: string
   cards: DashboardCard[]
-  layout: LayoutBlock[]
-  created_at?: string
-  updated_at?: string
 }
 
 export type LayoutType = 'grid' | 'list' | 'canvas'

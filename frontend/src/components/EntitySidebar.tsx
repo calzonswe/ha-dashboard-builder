@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import { HAEntity } from '../types/api'
+import ChatPanel from './ChatPanel'
 
 interface EntitySidebarProps {
   entities: HAEntity[]
+  selectedCards?: { entity_id: string; card_type: string; title?: string }[]
+  dashboardName?: string
 }
 
 const DOMAIN_GROUPS = ['light', 'sensor', 'switch', 'cover', 'fan', 'climate', 'media_player', 'camera'] as const
@@ -20,7 +21,8 @@ const DOMAIN_ICONS: Record<string, string> = {
   camera: '📷',
 }
 
-const EntitySidebar: React.FC<EntitySidebarProps> = ({ entities }) => {
+const EntitySidebar: React.FC<EntitySidebarProps> = ({ entities, selectedCards, dashboardName }) => {
+  const [activeTab, setActiveTab] = useState<'entities' | 'chat'>('entities')
   const [search, setSearch] = useState('')
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
 
@@ -53,21 +55,9 @@ const EntitySidebar: React.FC<EntitySidebarProps> = ({ entities }) => {
     setExpandedGroups((prev) => ({ ...prev, [domain]: !prev[domain] }))
   }
 
-  // Drag preview item for dnd-kit
   const DragPreviewItem: React.FC<{ entity: HAEntity }> = ({ entity }) => {
-    const { setNodeRef, transform, transition } = useSortable({
-      id: `preview-${entity.entity_id}`,
-      data: entity,
-      disabled: true, // Only for visual preview during drag from sidebar
-    })
-
-    const style: React.CSSProperties = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-    }
-
     return (
-      <div ref={setNodeRef} style={style} className="mb-1">
+      <div className="mb-1">
         <SidebarEntityItem entity={entity} />
       </div>
     )
@@ -77,29 +67,50 @@ const EntitySidebar: React.FC<EntitySidebarProps> = ({ entities }) => {
 
   return (
     <aside className="w-72 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden">
-      {/* Sidebar header */}
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M2 4a1 1 0 012 0v2.586l1.707 1.707A1 1 0 014.122 9H3V4zm10 0a1 1 0 012 0v2.586l1.707 1.707A1 1 0 0116.122 9h-1.122V4zM3 10v6a1 1 0 001 1h12a1 1 0 001-1v-6H3zm7-1a1 1 0 100 2 1 1 0 000-2z" />
-          </svg>
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('entities')}
+          className={`flex-1 py-3 text-sm font-medium transition-colors ${
+            activeTab === 'entities'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
           Entities ({totalEntities})
-        </h2>
-
-        {/* Search */}
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search entities..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-          />
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 absolute left-2.5 top-2.5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.415l-4.817-4.817A6 6 0 012 8z" clipRule="evenodd" />
-          </svg>
-        </div>
+        </button>
+        <button
+          onClick={() => setActiveTab('chat')}
+          className={`flex-1 py-3 text-sm font-medium transition-colors ${
+            activeTab === 'chat'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          🤖 Chat
+        </button>
       </div>
+
+      {activeTab === 'chat' ? (
+        <ChatPanel selectedCards={selectedCards} dashboardName={dashboardName} />
+      ) : (
+        <>
+          {/* Sidebar header - entities tab */}
+          <div className="p-4 border-b border-gray-200">
+            {/* Search */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search entities..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 absolute left-2.5 top-2.5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.415l-4.817-4.817A6 6 0 012 8z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
 
       {/* Entity groups */}
       <div className="flex-1 overflow-y-auto">
@@ -151,12 +162,14 @@ const EntitySidebar: React.FC<EntitySidebarProps> = ({ entities }) => {
             <p className="text-sm">No entities match your search</p>
           </div>
         )}
-      </div>
+        </div>
 
       {/* Footer hint */}
       <div className="p-3 border-t border-gray-200 bg-gray-50 text-xs text-gray-400 text-center">
         Drag entities onto the canvas to add cards
       </div>
+      </>
+      )}
     </aside>
   )
 }

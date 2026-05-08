@@ -40,11 +40,12 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, dashboard })
 
   const handleDownload = () => {
     if (!content) return
-    const blob = new Blob([content], { type: 'application/json' })
+    const mimeType = format === 'yaml' ? 'text/yaml' : 'application/json'
+    const blob = new Blob([content], { type: mimeType })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${(dashboard?.title || 'dashboard').replace(/\s+/g, '-').toLowerCase()}.${format}`
+    a.download = `${(dashboard?.name || 'dashboard').replace(/\s+/g, '-').toLowerCase()}.${format}`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)

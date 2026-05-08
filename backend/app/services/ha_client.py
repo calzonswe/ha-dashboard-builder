@@ -169,9 +169,7 @@ class HAAPI:
         service_data: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Call a Home Assistant service."""
-        payload = {"domain": domain, "service": service}
-        if service_data:
-            payload["service_data"] = {**service_data}
+        payload = service_data or {}
         return self._request("POST", f"services/{domain}/{service}", json=payload)
 
     def get_config(self) -> Dict[str, Any]:

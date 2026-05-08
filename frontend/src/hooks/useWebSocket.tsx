@@ -74,11 +74,10 @@ export function EntityStateProvider({ children }: { children: React.ReactNode })
   const wsRef = useRef<WebSocket | null>(null)
 
   // Manage WebSocket connection
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = window.location.hostname
-    const port = window.location.port || '8000'
-    const wsUrl = `${protocol}//${host}:${port}/api/ws/entities`
+    const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/ws/entities`
 
     const ws = new WebSocket(wsUrl)
     wsRef.current = ws
@@ -114,7 +113,7 @@ export function EntityStateProvider({ children }: { children: React.ReactNode })
 
     ws.onclose = () => {
       console.log('WebSocket disconnected, reconnecting in 5s...')
-      setTimeout(() => {
+      reconnectTimeoutRef.current = setTimeout(() => {
         if (wsRef.current?.readyState === WebSocket.CLOSED) {
           const retryWs = new WebSocket(wsUrl)
           wsRef.current = retryWs
@@ -128,6 +127,10 @@ export function EntityStateProvider({ children }: { children: React.ReactNode })
 
     return () => {
       ws.close()
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+        reconnectTimeoutRef.current = null
+      }
     }
   }, [])
 

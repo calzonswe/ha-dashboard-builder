@@ -1,4 +1,3 @@
-import { useCallback } from 'react'
 import { useToast, Toast as ToastType } from '../hooks/useToast'
 
 const TYPE_STYLES: Record<string, string> = {

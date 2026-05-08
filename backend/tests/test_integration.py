@@ -130,7 +130,7 @@ class TestHAConnection:
     def test_connect_to_ha_success(self):
         """Test successful HA connection."""
         response = self.client.post(
-            "/api/api/ha/connect",
+            "/api/ha/connect",
             json={
                 "host": "192.168.1.50",
                 "port": 8123,
@@ -165,7 +165,7 @@ class TestHAConnection:
             routes_module._entity_service = None
 
             response = self.client.post(
-                "/api/api/ha/connect",
+                "/api/ha/connect",
                 json={"host": "invalid.host", "port": 8123, "token": "bad_token"},
             )
             assert response.status_code == 400
@@ -180,7 +180,7 @@ class TestHAConnection:
         routes_module._entity_service = None
 
         response = self.client.get(
-            "/api/api/ha/status",
+            "/api/ha/status",
         )
         assert response.status_code == 200
         data = response.json()
@@ -210,7 +210,7 @@ class TestEntityDiscovery:
 
     def test_discover_entities(self):
         """Test full entity discovery flow."""
-        response = self.client.post("/api/api/ha/discover")
+        response = self.client.post("/api/ha/discover")
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "success"
@@ -220,10 +220,10 @@ class TestEntityDiscovery:
     def test_get_cached_entities(self):
         """Test retrieving cached entities after discovery."""
         # First discover
-        self.client.post("/api/api/ha/discover")
+        self.client.post("/api/ha/discover")
 
         # Then get cached entities
-        response = self.client.get("/api/api/ha/entities")
+        response = self.client.get("/api/ha/entities")
         assert response.status_code == 200
         data = response.json()
         assert "entities" in data
@@ -233,11 +233,9 @@ class TestEntityDiscovery:
     def test_get_entity_by_id(self):
         """Test fetching a specific entity by ID."""
         # Discover first to populate cache
-        self.client.post("/api/api/ha/discover")
+        self.client.post("/api/ha/discover")
 
-        response = self.client.get(
-            "/api/api/ha/entities/sensor.living_room_temperature"
-        )
+        response = self.client.get("/api/ha/entities/sensor.living_room_temperature")
         assert response.status_code == 200
         data = response.json()
         assert data["entity_id"] == "sensor.living_room_temperature"
@@ -246,9 +244,9 @@ class TestEntityDiscovery:
     def test_get_nonexistent_entity(self):
         """Test fetching an entity that doesn't exist."""
         # Discover first to populate cache
-        self.client.post("/api/api/ha/discover")
+        self.client.post("/api/ha/discover")
 
-        response = self.client.get("/api/api/ha/entities/sensor.nonexistent")
+        response = self.client.get("/api/ha/entities/sensor.nonexistent")
         assert response.status_code == 404
         data = response.json()
         assert "detail" in data
@@ -277,10 +275,10 @@ class TestEntitySearch:
     def test_search_by_name(self):
         """Test searching entities by name."""
         # Discover to populate cache
-        self.client.post("/api/api/ha/discover")
+        self.client.post("/api/ha/discover")
 
         response = self.client.post(
-            "/api/api/ha/search",
+            "/api/ha/search",
             json={"query": "Living Room"},
         )
         assert response.status_code == 200
@@ -292,10 +290,10 @@ class TestEntitySearch:
 
     def test_search_by_entity_id(self):
         """Test searching entities by entity ID."""
-        self.client.post("/api/api/ha/discover")
+        self.client.post("/api/ha/discover")
 
         response = self.client.post(
-            "/api/api/ha/search",
+            "/api/ha/search",
             json={"query": "kitchen_lights"},
         )
         assert response.status_code == 200
@@ -305,10 +303,10 @@ class TestEntitySearch:
 
     def test_search_no_results(self):
         """Test search with no matching entities."""
-        self.client.post("/api/api/ha/discover")
+        self.client.post("/api/ha/discover")
 
         response = self.client.post(
-            "/api/api/ha/search",
+            "/api/ha/search",
             json={"query": "zzznonexistent"},
         )
         assert response.status_code == 200
@@ -339,7 +337,7 @@ class TestServiceCalls:
     def test_call_service_success(self):
         """Test successful service call."""
         response = self.client.post(
-            "/api/api/ha/services/call",
+            "/api/ha/services/call",
             json={
                 "domain": "light",
                 "service": "turn_on",
@@ -354,7 +352,7 @@ class TestServiceCalls:
     def test_call_service_without_data(self):
         """Test service call without optional service_data."""
         response = self.client.post(
-            "/api/api/ha/services/call",
+            "/api/ha/services/call",
             json={
                 "domain": "switch",
                 "service": "toggle",
@@ -387,7 +385,7 @@ class TestErrorHandling:
     def test_search_without_connection(self):
         """Test search endpoint when no HA connection exists."""
         response = self.client.post(
-            "/api/api/ha/search",
+            "/api/ha/search",
             json={"query": "test"},
         )
         assert response.status_code == 400
@@ -397,7 +395,7 @@ class TestErrorHandling:
     def test_service_call_without_connection(self):
         """Test service call when no HA connection exists."""
         response = self.client.post(
-            "/api/api/ha/services/call",
+            "/api/ha/services/call",
             json={"domain": "light", "service": "turn_on"},
         )
         assert response.status_code == 400
@@ -412,7 +410,7 @@ class TestErrorHandling:
         )
 
         response = self.client.post(
-            "/api/api/ha/search",
+            "/api/ha/search",
             json={"query": ""},  # Empty query should fail validation
         )
         assert response.status_code == 422  # FastAPI validation error

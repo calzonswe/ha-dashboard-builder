@@ -1,6 +1,6 @@
 """API schemas for Home Assistant connection and entity discovery."""
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal, Union
 from pydantic import BaseModel, Field
 
 
@@ -586,3 +586,267 @@ class CardsBulkUpdateResponse(BaseModel):
         ...,
         description="Updated widget records with server-assigned IDs",
     )
+
+
+# ------------------------------------------------------------------
+# Lovelace Card Type Schemas (Phase 5)
+# ------------------------------------------------------------------
+
+# Supported Lovelace card types
+LOVELACE_CARD_TYPES = [
+    "entities",
+    "entity",
+    "glance",
+    "grid",
+    "horizontal-stack",
+    "vertical-stack",
+    "picture-entity",
+    "picture",
+    "cover",
+    "thermostat",
+    "climate",
+    "weather",
+    "scene",
+    "script",
+    "button",
+    "input-button",
+    "light",
+    "switch",
+    "automation",
+    "logbook",
+    "history",
+    "statistics",
+    "gauge",
+    "markdown",
+    "iframe",
+    "webpage",
+    "camera",
+    "plant",
+    "todo",
+]
+
+
+class LovelaceEntitiesCard(BaseModel):
+    """Entities card - shows a list of entity buttons."""
+
+    type: Literal["entities"] = "entities"
+    title: Optional[str] = None
+    show_header_toggle: bool = True
+    entities: List[Union[str, Dict[str, Any]]] = Field(
+        default_factory=list, description="List of entity IDs or entity objects"
+    )
+
+
+class LovelaceGlanceCard(BaseModel):
+    """Glance card - shows a group of entities in a compact grid."""
+
+    type: Literal["glance"] = "glance"
+    title: Optional[str] = None
+    columns: Optional[int] = Field(None, ge=1, le=6)
+    entities: List[Union[str, Dict[str, Any]]] = Field(
+        ..., description="List of entity IDs or entity objects"
+    )
+    show_name: bool = True
+    show_icon: bool = True
+    state_color: bool = False
+
+
+class LovelaceEntityCard(BaseModel):
+    """Entity card - displays a single entity."""
+
+    type: Literal["entity"] = "entity"
+    entity: str = Field(..., description="Entity ID to display")
+    name: Optional[str] = None
+    icon: Optional[str] = None
+    attribute: Optional[str] = None
+    unit: Optional[str] = None
+    secondary_info: Optional[str] = None
+    state_color: bool = True
+
+
+class LovelacePictureEntityCard(BaseModel):
+    """Picture Entity card - shows entity state on a background image."""
+
+    type: Literal["picture-entity"] = "picture-entity"
+    entity: str = Field(..., description="Entity ID to display")
+    image: Optional[str] = None
+    aspect_ratio: Optional[str] = None
+    show_name: bool = True
+    show_state: bool = True
+    theme: Optional[str] = None
+
+
+class LovelaceThermostatCard(BaseModel):
+    """Thermostat card - shows a climate entity with controls."""
+
+    type: Literal["thermostat"] = "thermostat"
+    entity: str = Field(..., description="Climate entity ID")
+    title: Optional[str] = None
+    theme: Optional[str] = None
+    show_current_temperature: bool = True
+
+
+class LovelaceGaugeCard(BaseModel):
+    """Gauge card - shows a sensor value as a gauge."""
+
+    type: Literal["gauge"] = "gauge"
+    entity: str = Field(..., description="Sensor entity ID")
+    title: Optional[str] = None
+    min: float = 0
+    max: float = 100
+    unit: Optional[str] = None
+    theme: Optional[str] = None
+    severity: Optional[Dict[str, Any]] = None
+
+
+class LovelaceGridCard(BaseModel):
+    """Grid card - shows multiple cards in a grid layout."""
+
+    type: Literal["grid"] = "grid"
+    title: Optional[str] = None
+    columns: Optional[int] = Field(None, ge=1, le=6)
+    cards: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Nested card configurations"
+    )
+
+
+class LovelaceVerticalStackCard(BaseModel):
+    """Vertical Stack card - stacks cards vertically."""
+
+    type: Literal["vertical-stack"] = "vertical-stack"
+    title: Optional[str] = None
+    cards: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Nested card configurations"
+    )
+
+
+class LovelaceHorizontalStackCard(BaseModel):
+    """Horizontal Stack card - stacks cards horizontally."""
+
+    type: Literal["horizontal-stack"] = "horizontal-stack"
+    title: Optional[str] = None
+    cards: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Nested card configurations"
+    )
+
+
+class LovelaceButtonCard(BaseModel):
+    """Button card - shows a clickable button."""
+
+    type: Literal["button"] = "button"
+    entity: Optional[str] = None
+    name: Optional[str] = None
+    icon: Optional[str] = None
+    show_icon: bool = True
+    show_name: bool = True
+    hold_action: Optional[Dict[str, Any]] = None
+    tap_action: Optional[Dict[str, Any]] = None
+
+
+class LovelaceMarkdownCard(BaseModel):
+    """Markdown card - displays Markdown content."""
+
+    type: Literal["markdown"] = "markdown"
+    content: str = Field(..., description="Markdown content")
+    title: Optional[str] = None
+    card_mod: Optional[Dict[str, Any]] = None
+
+
+class LovelaceCameraCard(BaseModel):
+    """Camera card - displays a camera feed or thumbnail."""
+
+    type: Literal["camera"] = "camera"
+    entity: str = Field(..., description="Camera entity ID")
+    title: Optional[str] = None
+    aspect_ratio: Optional[str] = None
+    show_controls: bool = False
+    show_timestamp: bool = False
+
+
+class LovelaceHistoryCard(BaseModel):
+    """History card - shows entity state history."""
+
+    type: Literal["history"] = "history"
+    title: Optional[str] = None
+    entities: List[str] = Field(..., description="List of entity IDs")
+    days_to_show: int = Field(default=7, ge=1, le=365)
+    refresh_interval: Optional[int] = None
+
+
+class LovelaceLogbookCard(BaseModel):
+    """Logbook card - shows logbook entries."""
+
+    type: Literal["logbook"] = "logbook"
+    title: Optional[str] = None
+    entities: List[str] = Field(default_factory=list, description="List of entity IDs")
+    hours_to_show: int = Field(default=24, ge=1, le=168)
+
+
+class LovelaceCardValidator:
+    """Validator for Lovelace card configurations.
+
+    Validates card type and required fields based on Lovelace card schema.
+    """
+
+    @staticmethod
+    def validate_card_type(card_type: str) -> bool:
+        """Check if card type is a valid Lovelace card type."""
+        return card_type in LOVELACE_CARD_TYPES
+
+    @staticmethod
+    def validate_entity(entity_id: str) -> bool:
+        """Validate entity ID format (domain.name)."""
+        if not entity_id or "." not in entity_id:
+            return False
+        parts = entity_id.split(".")
+        return len(parts) == 2 and parts[0] and parts[1]
+
+    @staticmethod
+    def validate_card(card_config: Dict[str, Any]) -> tuple[bool, Optional[str]]:
+        """Validate a card configuration.
+
+        Returns (is_valid, error_message).
+        """
+        card_type = card_config.get("type")
+        if not card_type:
+            return False, "Card type is required"
+
+        if not LovelaceCardValidator.validate_card_type(card_type):
+            return False, f"Unknown card type: {card_type}"
+
+        # Validate entity cards have entity field
+        entity_cards = ["entity", "picture-entity", "thermostat", "gauge", "button", "camera"]
+        if card_type in entity_cards:
+            entity = card_config.get("entity")
+            if not entity:
+                return False, f"Card type '{card_type}' requires 'entity' field"
+            if not LovelaceCardValidator.validate_entity(entity):
+                return False, f"Invalid entity ID: {entity}"
+
+        # Validate stack cards have cards array
+        stack_cards = ["grid", "vertical-stack", "horizontal-stack"]
+        if card_type in stack_cards:
+            cards = card_config.get("cards", [])
+            if not isinstance(cards, list):
+                return False, f"Card type '{card_type}' requires 'cards' array"
+
+        return True, None
+
+
+# Pydantic model for validating any Lovelace card
+LovelaceCardConfig = Union[
+    LovelaceEntitiesCard,
+    LovelaceGlanceCard,
+    LovelaceEntityCard,
+    LovelacePictureEntityCard,
+    LovelaceThermostatCard,
+    LovelaceGaugeCard,
+    LovelaceGridCard,
+    LovelaceVerticalStackCard,
+    LovelaceHorizontalStackCard,
+    LovelaceButtonCard,
+    LovelaceMarkdownCard,
+    LovelaceCameraCard,
+    LovelaceHistoryCard,
+    LovelaceLogbookCard,
+]

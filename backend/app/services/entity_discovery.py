@@ -6,6 +6,8 @@ from datetime import datetime
 import sqlite3
 import json as json_module
 
+from app.services.ha_client import HAConnectionError
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,8 +33,7 @@ class EntityCache:
     def _ensure_schema(self):
         """Create tables if they don't exist."""
         conn = self._get_conn()
-        conn.execute(
-            """
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS entities (
                 entity_id TEXT PRIMARY KEY,
                 name TEXT DEFAULT '',
@@ -46,10 +47,8 @@ class EntityCache:
                 last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """
-        )
-        conn.execute(
-            """
+        """)
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS state_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 entity_id TEXT NOT NULL,
@@ -58,8 +57,7 @@ class EntityCache:
                 changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (entity_id) REFERENCES entities(entity_id)
             )
-        """
-        )
+        """)
         conn.commit()
 
     def get_all_entities(self) -> List[Dict[str, Any]]:
@@ -149,12 +147,13 @@ class EntityCache:
 
             new_state = str(state.get("state", ""))
 
-            # Insert or update entity
             # Support both raw HA states (attributes.friendly_name) and enriched dicts (top-level name)
             if "name" in state:
                 name = state.get("name", entity_id)
             else:
                 name = state.get("attributes", {}).get("friendly_name", entity_id)
+
+            unit = state.get("attributes", {}).get("unit_of_measurement", "")
 
             conn.execute(
                 """
@@ -170,7 +169,7 @@ class EntityCache:
                     entity_type,
                     new_state,
                     json_module.dumps(state.get("attributes", {})),
-                    state.get("unit_of_measurement"),
+                    unit,
                     state.get("device_id"),
                     state.get("area"),
                     str(state.get("last_changed", "")),
@@ -373,7 +372,7 @@ class EntityDiscoveryService:
                     "name": state.get("attributes", {}).get("friendly_name", entity_id),
                     "state": str(state.get("state", "")),
                     "unit_of_measurement": state.get("attributes", {}).get(
-                        "unit_of_measure"
+                        "unit_of_measurement"
                     ),
                     "device_id": device_id,
                     "area": area_name,
@@ -391,18 +390,3 @@ class EntityDiscoveryService:
     def search_entities(self, query: str) -> List[Dict[str, Any]]:
         """Search cached entities by name or ID."""
         return self.cache.search(query)
-
-
-class HAConnectionError(Exception):
-    """Raised when connection to Home Assistant fails."""
-
-    pass
-
-
-class HAAPIError(Exception):
-    """Raised when the Home Assistant API returns an error."""
-
-    def __init__(self, status_code: int, message: str):
-        self.status_code = status_code
-        self.message = message
-        super().__init__(f"HA API Error {status_code}: {message}")

@@ -176,7 +176,7 @@ export default function EntityPickerModal({
 }
 
 function EntityRow({ entity, onSelect }: { entity: CachedEntity; onSelect: (entityId: string, cardType: string) => void }) {
-  const [showActions, setShowActions] = useState(false)
+  const showActions = false
 
   return (
     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition group">

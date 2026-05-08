@@ -1,6 +1,6 @@
 """Database setup and SQLAlchemy models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import (
     Column,
@@ -31,11 +31,11 @@ class Page(Base):
     description = Column(
         String, default="", nullable=True
     )  # Optional dashboard description
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
     # Relationship to cards on this page
@@ -64,19 +64,17 @@ class Card(Base):
     page = relationship("Page", back_populates="cards")
 
 
-class Entity(Base):
-    """A Home Assistant entity discovered from the instance."""
+class Setting(Base):
+    """Key-value store for application settings."""
 
-    __tablename__ = "entities"
+    __tablename__ = "settings"
 
-    id = Column(String, primary_key=True)  # HA entity ID (e.g., sensor.temperature)
-    name = Column(String, default="")
-    state = Column(String, default="")
-    attributes = Column(JSON, default=dict)  # Entity attributes as JSON
-    last_updated = Column(
+    key = Column(String, primary_key=True, index=True)
+    value = Column(String, nullable=True)
+    updated_at = Column(
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
 

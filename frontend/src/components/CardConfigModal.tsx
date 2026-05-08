@@ -10,11 +10,28 @@ interface CardConfigModalProps {
 }
 
 const CARD_TYPES: Array<{ value: CardConfig['type']; label: string; icon: string }> = [
-  { value: 'state', label: 'State Display', icon: '📋' },
-  { value: 'gauge', label: 'Gauge / Meter', icon: '📊' },
-  { value: 'slider', label: 'Slider Control', icon: '🎚️' },
-  { value: 'button', label: 'Button Toggle', icon: '🔘' },
-  { value: 'list', label: 'Entity List', icon: '📝' },
+  // Core Lovelace card types
+  { value: 'entities', label: 'Entities List', icon: '📋' },
+  { value: 'entity', label: 'Single Entity', icon: '🎯' },
+  { value: 'glance', label: 'Glance Grid', icon: '👁️' },
+  { value: 'thermostat', label: 'Thermostat', icon: '🌡️' },
+  { value: 'gauge', label: 'Gauge', icon: '📊' },
+  { value: 'picture-entity', label: 'Picture Entity', icon: '🖼️' },
+  { value: 'button', label: 'Button', icon: '🔘' },
+  { value: 'markdown', label: 'Markdown', icon: '📝' },
+  { value: 'camera', label: 'Camera', icon: '📷' },
+  { value: 'history', label: 'History Graph', icon: '📈' },
+  { value: 'logbook', label: 'Logbook', icon: '📖' },
+  // Layout cards
+  { value: 'grid', label: 'Grid', icon: '⊞' },
+  { value: 'vertical-stack', label: 'Vertical Stack', icon: '⬇️' },
+  { value: 'horizontal-stack', label: 'Horizontal Stack', icon: '➡️' },
+  // Legacy/custom types (kept for backwards compatibility)
+  { value: 'state', label: 'State Display', icon: '💡' },
+  { value: 'light', label: 'Light Control', icon: '☀️' },
+  { value: 'switch', label: 'Switch Control', icon: '🔌' },
+  { value: 'climate', label: 'Climate', icon: '❄️' },
+  { value: 'sensor', label: 'Sensor', icon: '📡' },
 ]
 
 const THEME_OPTIONS: Array<{ value: CardConfig['theme']; label: string }> = [

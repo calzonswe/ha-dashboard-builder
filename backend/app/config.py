@@ -9,7 +9,9 @@ class Settings(BaseSettings):
 
     model_config = ConfigDict(
         env_file=".env",
-        case_sensitive=True,
+        env_file_encoding="utf-8",
+        extra="ignore",
+        env_string_split=",",
     )
 
     # Application settings

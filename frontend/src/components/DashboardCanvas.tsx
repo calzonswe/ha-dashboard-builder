@@ -47,20 +47,18 @@ const DashboardCanvas: React.FC<DashboardCanvasProps> = ({
     return ('ontouchstart' in window || navigator.maxTouchPoints > 0)
   }, [])
 
-  // Sensors for drag interaction - TouchSensor on touch devices, PointerSensor on desktop
+  const touchSensor = useSensor(TouchSensor)
   const pointerSensor = useSensor(PointerSensor, {
-    activationConstraint: { distance: 5 }, // require 5px movement before dragging starts
+    activationConstraint: { distance: 5 },
   })
 
-  const sensors = isTouchDevice
-    ? useSensors(useSensor(TouchSensor))
-    : useSensors(pointerSensor)
+  const sensors = useSensors(isTouchDevice ? touchSensor : pointerSensor)
 
   /** Find the grid cell (x,y in grid units) from an activator event */
   function getGridPosition(activatorEvent: Event | null): { x: number; y: number } {
     if (!activatorEvent || !('target' in activatorEvent)) return { x: 0, y: 0 }
-    const target = (activatorEvent as unknown as { target: HTMLElement }).target
-    if (!target || !('getBoundingClientRect' in target)) return { x: 0, y: 0 }
+    const target = (activatorEvent.target as HTMLElement | null)
+    if (!target || typeof target.getBoundingClientRect !== 'function') return { x: 0, y: 0 }
     const rect = target.getBoundingClientRect()
     return {
       x: snapToGrid(rect.left),
