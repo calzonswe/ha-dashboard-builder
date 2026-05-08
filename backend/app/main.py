@@ -14,6 +14,7 @@ from app.services.entity_discovery import EntityDiscoveryService
 from app.services.ha_client import HAAPI
 from app.services.cache_refresh import CacheRefreshService
 from app.services.event_listener import HAEventListener
+from app.services.llm_service import LLMService
 
 # Global services
 ha_client = None
@@ -25,30 +26,51 @@ event_listener = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifecycle manager."""
-    global ha_client, discovery_service, cache_refresh_service, event_listener
+    global ha_client, discovery_service, cache_refresh_service, event_listener, llm_service
 
     # Startup: Initialize database and services
     init_db()
 
-    # Initialize HA client and discovery service
-    ha_client = HAAPI(
-        host=settings.HA_HOST,
-        port=settings.HA_PORT,
-        token=settings.HA_ACCESS_TOKEN,
-    )
-    discovery_service = EntityDiscoveryService(ha_client=ha_client)
+    # Initialize HA client and discovery service (optional — skip if HA is unavailable)
+    try:
+        ha_client = HAAPI(
+            host=settings.HA_HOST,
+            port=settings.HA_PORT,
+            token=settings.HA_ACCESS_TOKEN,
+        )
+        discovery_service = EntityDiscoveryService(ha_client=ha_client)
 
-    # Start cache refresh service
-    cache_refresh_service = CacheRefreshService(discovery_service, interval_seconds=60)
-    await cache_refresh_service.start()
+        # Start cache refresh service
+        cache_refresh_service = CacheRefreshService(discovery_service, interval_seconds=60)
+        await cache_refresh_service.start()
 
-    # Start HA event listener for real-time state updates
-    event_listener = HAEventListener(
-        ha_client=ha_client,
-        websocket_manager=websocket_manager,
-        poll_interval=settings.WS_POLL_INTERVAL or 5.0,
+        # Start HA event listener for real-time state updates
+        event_listener = HAEventListener(
+            ha_client=ha_client,
+            websocket_manager=websocket_manager,
+            poll_interval=settings.WS_POLL_INTERVAL or 5.0,
+        )
+        await event_listener.start()
+    except Exception as e:
+        print(f"[WARNING] Home Assistant connection failed at startup: {e}")
+        print("[INFO] API will start without HA — entities will be unavailable until HA is reachable")
+        ha_client = None
+        discovery_service = None
+        cache_refresh_service = None
+        event_listener = None
+
+    # Initialize LLM service if provider is configured
+    llm_service = LLMService(
+        provider=settings.LLM_PROVIDER,
+        model=settings.DEFAULT_LLM_MODEL,
+        base_url=(
+            settings.OLLAMA_BASE_URL
+            if settings.LLM_PROVIDER == "ollama"
+            else settings.LMSTUDIO_BASE_URL
+        ),
     )
-    await event_listener.start()
+    from app.services.llm_service import set_llm_service
+    set_llm_service(llm_service)
 
     yield
 
@@ -127,3 +149,19 @@ async def root():
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy"}
+
+
+@app.get("/health/ha")
+async def ha_health_check():
+    """Check Home Assistant connectivity. Returns status of HA connection."""
+    if ha_client is None:
+        return {
+            "ha_status": "unavailable",
+            "message": "Home Assistant client not initialized (connection failed at startup)",
+        }
+    try:
+        # Try a lightweight call to verify HA is reachable
+        await ha_client.get_states()
+        return {"ha_status": "connected"}
+    except Exception as e:
+        return {"ha_status": "error", "message": str(e)}

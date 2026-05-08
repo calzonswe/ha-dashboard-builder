@@ -37,9 +37,6 @@ services:
       # Persist dashboard DB across container restarts
       - ha-dashboard-data:/app/data
 
-volumes:
-  ha-dashboard-data:
-
   # ─── Frontend (React + Nginx) ───────────────────────────────────────
   ha-dashboard-frontend:
     build:
@@ -51,3 +48,6 @@ volumes:
     # Frontend depends on backend being available for API proxying
     depends_on:
       - ha-dashboard-api
+
+volumes:
+  ha-dashboard-data:

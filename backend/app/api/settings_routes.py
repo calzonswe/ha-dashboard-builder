@@ -81,3 +81,36 @@ def delete_setting(key: str, db: Session = Depends(get_db)):
     db.delete(setting)
     db.commit()
     return None
+
+
+@router.post("/settings/reload")
+def reload_settings(db: Session = Depends(get_db)):
+    """Reload settings from database and update runtime configuration.
+
+    POST /api/v1/settings/reload -> 200 { "message": "Settings reloaded" }
+    """
+    from app.services.llm_service import get_llm_service, set_llm_service, LLMService
+
+    # Read all settings from DB
+    db_settings = db.query(Setting).all()
+    settings_dict = {s.key: s.value for s in db_settings}
+
+    # Update LLM service if provider/model changed
+    llm_provider = settings_dict.get("llm_provider", "ollama")
+    llm_model = settings_dict.get("llm_model", "llama3.2")
+    llm_base_url = settings_dict.get(
+        "llm_base_url",
+        "http://localhost:11434" if llm_provider == "ollama" else "http://localhost:1234/v1",
+    )
+
+    try:
+        new_llm = LLMService(
+            provider=llm_provider,
+            model=llm_model,
+            base_url=llm_base_url,
+        )
+        set_llm_service(new_llm)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to reload LLM settings: {e}")
+
+    return {"message": "Settings reloaded successfully"}

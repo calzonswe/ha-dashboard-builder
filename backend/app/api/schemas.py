@@ -458,6 +458,36 @@ class FullDashboardResponse(BaseModel):
     )
 
 
+class LiveEntityState(BaseModel):
+    """Current state of a Home Assistant entity."""
+
+    entity_id: str = Field(..., description="Home Assistant entity ID")
+    state: str = Field(..., description="Current state value")
+    attributes: Dict[str, Any] = Field(
+        default_factory=dict, description="Entity attributes"
+    )
+
+
+class DashboardPreviewResponse(BaseModel):
+    """Dashboard preview with live entity states.
+
+    Returns the dashboard definition along with current entity states
+    from Home Assistant for all widgets that reference entities.
+    """
+
+    id: int = Field(..., description="Unique dashboard identifier")
+    name: str = Field(..., description="Name of the dashboard")
+    description: Optional[str] = Field(None, description="Optional description")
+    cards: List[WidgetResponse] = Field(
+        default_factory=list,
+        description="All widgets on this dashboard",
+    )
+    entity_states: Dict[str, LiveEntityState] = Field(
+        default_factory=dict,
+        description="Current live states for all referenced entities",
+    )
+
+
 class CardUpdateRequest(BaseModel):
     """Request to update a single widget (card) on a dashboard.
 

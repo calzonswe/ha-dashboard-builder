@@ -73,6 +73,11 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         body: JSON.stringify(settings),
       })
       if (res.ok) {
+        // Reload settings to apply LLM provider changes at runtime
+        const reloadRes = await fetch('/api/v1/settings/reload', { method: 'POST' })
+        if (!reloadRes.ok) {
+          console.warn('Settings saved but reload failed:', await reloadRes.text())
+        }
         setMessage('Settings saved successfully!')
         setTimeout(() => setMessage(null), 3000)
       }

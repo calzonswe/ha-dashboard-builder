@@ -113,6 +113,12 @@ export async function getDashboards(): Promise<DashboardConfig[]> {
   }))
 }
 
+export async function getHAStatus(): Promise<{ connected: boolean; host?: string; port?: number; entities?: number; error?: string }> {
+  const res = await fetch('/api/ha/status')
+  if (!res.ok) return { connected: false }
+  return res.json()
+}
+
 export async function getDashboard(id: string): Promise<DashboardConfig> {
   const data = await fetchJSON<{
     id: number

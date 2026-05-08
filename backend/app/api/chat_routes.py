@@ -63,7 +63,10 @@ async def generate_chat_stream(
         yield f"data: {full_response}\n\n"
     except Exception as e:
         logger.error(f"Streaming chat failed: {e}")
-        yield f"data: Error: {str(e)}\n\n"
+        if isinstance(e, HTTPException):
+            yield f"data: Error ({e.status_code}): {e.detail}\n\n"
+        else:
+            yield f"data: Error: {str(e)}\n\n"
 
     yield "data: [DONE]\n\n"
 
@@ -102,6 +105,8 @@ async def send_chat_message(request: ChatRequest) -> ChatResponse:
             message=response,
             model=request.model or llm.model or "default",
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Chat request failed: {e}")
         raise HTTPException(status_code=500, detail=f"Chat request failed: {str(e)}")

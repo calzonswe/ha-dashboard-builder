@@ -28,9 +28,10 @@ class Settings(BaseSettings):
     WS_POLL_INTERVAL: float = 5.0
 
     # LLM settings (Ollama/LMStudio)
+    LLM_PROVIDER: str = "ollama"  # ollama, lmstudio, or none
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    LMSTUDIO_BASE_URL: str = "http://localhost:1234"
-    DEFAULT_LLM_MODEL: str = "llama3"
+    LMSTUDIO_BASE_URL: str = "http://localhost:1234/v1"
+    DEFAULT_LLM_MODEL: str = "llama3.2"
 
     # CORS settings (frontend origin)
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]

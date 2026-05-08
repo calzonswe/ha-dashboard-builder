@@ -4,6 +4,7 @@ import { HAEntity, DashboardCard, CardConfig, DashboardConfig } from '../types/a
 import { useDashboard } from '../hooks/useDashboard'
 import { useEntityStates } from '../hooks/useEntityStates'
 import { useEntities } from '../hooks/useEntities'
+import { getHAStatus } from '../services/api'
 import ResponsiveLayout from '../components/ResponsiveLayout'
 import MobileSidebar from '../components/MobileSidebar'
 import DashboardHeader from '../components/DashboardHeader'
@@ -40,6 +41,12 @@ const DashboardView: React.FC = () => {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<Error | null>(null)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const [haConnected, setHaConnected] = useState(true)
+
+  // Check HA connection on mount
+  React.useEffect(() => {
+    getHAStatus().then((status) => setHaConnected(status.connected)).catch(() => {})
+  }, [])
 
   // Export/Import modal state
   const [exportModalOpen, setExportModalOpen] = useState(false)
@@ -185,6 +192,25 @@ const DashboardView: React.FC = () => {
         {hasError && (
           <div className="mx-4 mt-2 bg-red-50 border border-red-300 rounded-md p-3 text-sm text-red-700">
             {saveError ? `Save failed: ${saveError.message}` : dashboardError?.message}
+          </div>
+        )}
+
+        {/* Connection warning */}
+        {!haConnected && (
+          <div className="mx-4 mt-2 bg-yellow-50 border border-yellow-200 rounded-md p-3 flex items-start gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M8.488 11.75a1.25 1.25 0 00-2.5 0v3.5a1.25 1.25 0 002.5 0v-3.5zM9.376 7.874a.75.75 0 011.248 0l.833 1.667a.75.75 0 001.248 0l.833-1.667a.75.75 0 011.248 0l-.833 1.667a.75.75 0 000 1.248l1.667.833a.75.75 0 010 1.248l-1.667.833a.75.75 0 000 1.248l.833 1.667a.75.75 0 01-1.248 0L9.5 11.75H8.5a.75.75 0 010-1.5h1L9.376 7.874z" />
+            </svg>
+            <div className="text-sm text-yellow-800">
+              <p className="font-medium">Home Assistant not connected</p>
+              <p className="mt-0.5">
+                Go to{' '}
+                <a href="/connect" className="underline hover:text-yellow-900">
+                  /connect
+                </a>{' '}
+                to configure your connection.
+              </p>
+            </div>
           </div>
         )}
 

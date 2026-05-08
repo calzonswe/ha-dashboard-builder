@@ -4,12 +4,17 @@ Provides endpoints for creating, listing, and managing dashboards
 and their associated widgets/cards.
 """
 
+import logging
+from typing import Dict
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db, Page, Card
+logger = logging.getLogger(__name__)
+router = APIRouter()
+
 from .schemas import (
     DashboardCreateRequest,
     DashboardUpdateRequest,
@@ -22,6 +27,8 @@ from .schemas import (
     FullDashboardResponse,
     CardsBulkUpdateRequest,
     CardsBulkUpdateResponse,
+    DashboardPreviewResponse,
+    LiveEntityState,
 )
 
 router = APIRouter()
@@ -425,3 +432,79 @@ def delete_dashboard(dashboard_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=500, detail="Failed to delete dashboard and its widgets"
         )
+
+
+# ------------------------------------------------------------------
+# Dashboard Preview (live entity states)
+# ------------------------------------------------------------------
+
+
+@router.get(
+    "/dashboards/{dashboard_id}/preview",
+    response_model=DashboardPreviewResponse,
+    summary="Dashboard preview with live states",
+    description=(
+        "Return a dashboard definition along with current entity states from "
+        "Home Assistant for all widgets that reference entities."
+    ),
+)
+def get_dashboard_preview(dashboard_id: int, db: Session = Depends(get_db)):
+    """Return a dashboard preview with live HA entity states.
+
+    GET /api/v1/dashboards/1/preview -> 200 { "id": 1, "name": "...", "cards": [...], "entity_states": {...} }
+    """
+    page = db.query(Page).filter(Page.id == dashboard_id).first()
+    if not page:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    cards = (
+        db.query(Card)
+        .filter(Card.page_id == dashboard_id)
+        .order_by(Card.y, Card.x)
+        .all()
+    )
+    widgets = [
+        WidgetResponse(
+            id=card.id,
+            page_id=card.page_id or 0,
+            card_type=card.card_type or "",
+            entity_id=card.entity_id if card.entity_id != "" else None,
+            title=card.title if card.title != "" else None,
+            config=card.config or {},
+            x=card.x or 0,
+            y=card.y or 0,
+            width=card.width or 1,
+            height=card.height or 1,
+        )
+        for card in cards
+    ]
+
+    # Fetch live entity states from HA for all referenced entities
+    entity_states: Dict[str, LiveEntityState] = {}
+    try:
+        from app.api.routes import get_ha_client as _get_ha_client
+
+        client = _get_ha_client()
+        if client is not None:
+            states = client.get_states()
+            # Collect unique entity IDs referenced by widgets
+            widget_entity_ids = {w.entity_id for w in widgets if w.entity_id}
+            for state in states:
+                eid = state.get("entity_id", "")
+                if eid and eid in widget_entity_ids:
+                    entity_states[eid] = LiveEntityState(
+                        entity_id=eid,
+                        state=str(state.get("state", "")),
+                        attributes=state.get("attributes", {}),
+                    )
+    except Exception as exc:
+        # Non-fatal — preview still returns dashboard structure without live states
+        logger.warning(f"Failed to fetch live states for preview: {exc}")
+
+    return DashboardPreviewResponse(
+        id=page.id,
+        name=page.name or "",
+        description=page.description if page.description != "" else None,
+        cards=widgets,
+        entity_states=entity_states,
+    )

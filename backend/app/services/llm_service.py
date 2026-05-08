@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 import httpx
+from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +86,16 @@ class OllamaProvider(LLMProvider):
                 data = response.json()
                 return data.get("message", {}).get("content", "")
 
-        return await retry_with_backoff(_make_request)
+        try:
+            return await retry_with_backoff(_make_request)
+        except Exception as e:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    f"LLM provider '{self.base_url}' is not reachable. "
+                    f"Ensure Ollama is running at {self.base_url} or set LLM_PROVIDER=none in .env."
+                ),
+            )
 
     def get_available_models(self) -> list[str]:
         """Return list of available models from Ollama."""
@@ -130,7 +140,16 @@ class LMStudioProvider(LLMProvider):
                 data = response.json()
                 return data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
-        return await retry_with_backoff(_make_request)
+        try:
+            return await retry_with_backoff(_make_request)
+        except Exception as e:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    f"LLM provider '{self.base_url}' is not reachable. "
+                    f"Ensure LM Studio is running at {self.base_url} or set LLM_PROVIDER=none in .env."
+                ),
+            )
 
     def get_available_models(self) -> list[str]:
         """Return list of available models from LM Studio."""
@@ -157,7 +176,10 @@ class LLMService:
     ):
         self.provider_name = provider
         self.model = model
-        self._provider = self._create_provider(provider, base_url)
+        if provider == "none":
+            self._provider = None
+        else:
+            self._provider = self._create_provider(provider, base_url)
 
     def _create_provider(self, provider: str, base_url: str | None) -> LLMProvider:
         """Create an LLM provider instance based on provider name."""
@@ -166,16 +188,9 @@ class LLMService:
         else:  # default to ollama
             return OllamaProvider(base_url or "http://localhost:11434")
 
-    def set_provider(
-        self,
-        provider: str,
-        model: str | None = None,
-        base_url: str | None = None,
-    ) -> None:
-        """Switch to a different provider."""
-        self.provider_name = provider
-        self.model = model
-        self._provider = self._create_provider(provider, base_url)
+    def is_available(self) -> bool:
+        """Check if an LLM provider is configured."""
+        return self._provider is not None
 
     async def chat(
         self,
@@ -183,14 +198,21 @@ class LLMService:
         model: str | None = None,
     ) -> str:
         """Send a chat message and get a response."""
+        if self._provider is None:
+            raise HTTPException(
+                status_code=503,
+                detail="No LLM provider configured. Set LLM_PROVIDER in .env to 'ollama' or 'lmstudio'.",
+            )
         return await self._provider.chat(messages, model or self.model)
 
     def get_available_models(self) -> list[str]:
         """Get available models for the current provider."""
+        if self._provider is None:
+            return []
         return self._provider.get_available_models()
 
 
-# Global LLM service instance (initialized on first use)
+# Global LLM service instance (initialized at startup)
 _llm_service: LLMService | None = None
 
 
@@ -198,5 +220,12 @@ def get_llm_service() -> LLMService:
     """Get or create the global LLM service instance."""
     global _llm_service
     if _llm_service is None:
+        # Fallback to default if not initialized at startup
         _llm_service = LLMService()
     return _llm_service
+
+
+def set_llm_service(service: LLMService) -> None:
+    """Set the global LLM service instance (called from main.py)."""
+    global _llm_service
+    _llm_service = service

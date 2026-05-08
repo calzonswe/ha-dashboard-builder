@@ -74,11 +74,22 @@ async def connect_to_ha(request: HAConnectionRequest):
         client = get_ha_client()
         info = await asyncio.to_thread(client.test_connection)
 
+        # Auto-discover entities after successful connection
+        entity_service = get_entity_service()
+        discovered_count = 0
+        try:
+            summary = await asyncio.to_thread(entity_service.discover)
+            discovered_count = summary.get("total_entities", 0)
+            logger.info(f"Auto-discovered {discovered_count} entities from HA")
+        except Exception as disc_err:
+            logger.warning(f"Auto-discovery failed (non-fatal): {disc_err}")
+
         return HAConnectionResponse(
             status="success",
             host=info["host"],
             port=info["port"],
-            entities=info.get("entities"),
+            entities=discovered_count,
+            message=f"Connected and discovered {discovered_count} entities" if discovered_count > 0 else "Connected successfully",
         )
     except HAConnectionError as exc:
         logger.error(f"HA connection failed: {exc}")
@@ -138,6 +149,11 @@ async def get_cached_entities():
             entities=[CachedEntity(**e) for e in entities],
             count=len(entities),
         )
+    except HTTPException:
+        raise
+    except HAAPIError as exc:
+        logger.error(f"HAAPI error fetching entities: {exc}")
+        raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
         logger.error(f"Error fetching cached entities: {exc}")
         raise HTTPException(
