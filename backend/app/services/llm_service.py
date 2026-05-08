@@ -88,7 +88,7 @@ class OllamaProvider(LLMProvider):
 
         try:
             return await retry_with_backoff(_make_request)
-        except Exception as e:
+        except Exception:
             raise HTTPException(
                 status_code=503,
                 detail=(
@@ -142,7 +142,7 @@ class LMStudioProvider(LLMProvider):
 
         try:
             return await retry_with_backoff(_make_request)
-        except Exception as e:
+        except Exception:
             raise HTTPException(
                 status_code=503,
                 detail=(

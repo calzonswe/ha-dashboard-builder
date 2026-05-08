@@ -89,7 +89,7 @@ def reload_settings(db: Session = Depends(get_db)):
 
     POST /api/v1/settings/reload -> 200 { "message": "Settings reloaded" }
     """
-    from app.services.llm_service import get_llm_service, set_llm_service, LLMService
+    from app.services.llm_service import set_llm_service, LLMService
 
     # Read all settings from DB
     db_settings = db.query(Setting).all()

@@ -12,9 +12,6 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db, Page, Card
-logger = logging.getLogger(__name__)
-router = APIRouter()
-
 from .schemas import (
     DashboardCreateRequest,
     DashboardUpdateRequest,
@@ -31,6 +28,7 @@ from .schemas import (
     LiveEntityState,
 )
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
