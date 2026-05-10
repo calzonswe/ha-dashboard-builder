@@ -55,6 +55,15 @@ def set_ha_connection(host: str, port: int, token: str, ssl: bool = True):
     _entity_service = EntityDiscoveryService(ha_client=_ha_client)
 
 
+def sync_from_main(ha_client, entity_service):
+    """Sync routes globals from main.py global services (loaded from DB at startup)."""
+    global _ha_client, _entity_service
+    if ha_client is not None:
+        _ha_client = ha_client
+    if entity_service is not None:
+        _entity_service = entity_service
+
+
 # ------------------------------------------------------------------
 # Routes
 # ------------------------------------------------------------------
@@ -66,15 +75,35 @@ def set_ha_connection(host: str, port: int, token: str, ssl: bool = True):
     summary="Connect to Home Assistant",
     description=(
         "Establish a connection to a Home Assistant instance using the provided "
-        "host, port, and access token. Validates credentials by testing the connection."
+        "host, port, and access token. Validates credentials by testing the connection. "
+        "Persists the connection settings to the database."
     ),
 )
-async def connect_to_ha(request: HAConnectionRequest):
+async def connect_to_ha(request: HAConnectionRequest, db=None):
+    from app.database import SessionLocal, SettingsModel
+    from app.database import encrypt_token
+
     try:
         set_ha_connection(host=request.host, port=request.port, token=request.token, ssl=request.ssl)
 
         client = get_ha_client()
         info = await asyncio.to_thread(client.test_connection)
+
+        # Persist connection settings to DB
+        db = db or SessionLocal()
+        try:
+            settings = db.query(SettingsModel).first()
+            if settings is None:
+                settings = SettingsModel()
+                db.add(settings)
+            settings.ha_host = request.host
+            settings.ha_port = request.port
+            settings.ha_ssl = request.ssl
+            if request.token:
+                settings.ha_access_token_encrypted = encrypt_token(request.token)
+            db.commit()
+        finally:
+            db.close()
 
         # Auto-discover entities after successful connection
         entity_service = get_entity_service()

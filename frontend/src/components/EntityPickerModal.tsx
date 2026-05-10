@@ -39,9 +39,14 @@ export default function EntityPickerModal({
 
     const timeout = setTimeout(async () => {
       try {
+        const token = localStorage.getItem('auth_token') || ''
         const res = await fetch('/api/ha/search', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          credentials: 'same-origin',
           body: JSON.stringify({ query: searchQuery }),
         })
         if (res.ok) {
@@ -58,7 +63,11 @@ export default function EntityPickerModal({
 
   const fetchAreas = async () => {
     try {
-      const res = await fetch('/api/ha/entities')
+      const token = localStorage.getItem('auth_token') || ''
+      const res = await fetch('/api/ha/entities', {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        credentials: 'same-origin',
+      })
       if (res.ok) {
         const data = await res.json()
         const uniqueAreas = [...new Set(data.entities.map((e: CachedEntity) => e.area).filter(Boolean))] as string[]
@@ -72,7 +81,11 @@ export default function EntityPickerModal({
   const fetchEntities = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/ha/entities')
+      const token = localStorage.getItem('auth_token') || ''
+      const res = await fetch('/api/ha/entities', {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        credentials: 'same-origin',
+      })
       if (res.ok) {
         const data = await res.json()
         setEntities(data.entities || [])

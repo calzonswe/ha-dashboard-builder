@@ -1,122 +1,162 @@
-"""Settings API routes for application configuration."""
+"""Settings API routes for persistent application configuration."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.database import get_db, Setting
+from app.database import SettingsModel, get_db
 
 router = APIRouter()
 
 
-@router.get("/settings")
-def get_all_settings(db: Session = Depends(get_db)):
-    """Return all settings as key-value pairs.
+# ─── Pydantic schemas ──────────────────────────────────────────────
 
-    GET /api/v1/settings -> 200 { "settings": { "key": "value", ... } }
-    """
-    settings = db.query(Setting).all()
-    return {"settings": {s.key: s.value for s in settings}}
-
-
-@router.get("/settings/{key}")
-def get_setting(key: str, db: Session = Depends(get_db)):
-    """Return a single setting by key.
-
-    GET /api/v1/settings/llm_provider -> 200 { "key": "llm_provider", "value": "ollama" }
-    """
-    setting = db.query(Setting).filter(Setting.key == key).first()
-    if not setting:
-        raise HTTPException(status_code=404, detail=f"Setting '{key}' not found")
-    return {"key": setting.key, "value": setting.value}
+class HAConnectionConfig(BaseModel):
+    """Home Assistant connection settings."""
+    ha_host: str = Field(default="localhost", description="HA hostname or IP")
+    ha_port: int = Field(default=8123, ge=1, le=65535)
+    ha_ssl: bool = Field(default=False)
 
 
-@router.put("/settings/{key}")
-def upsert_setting(key: str, value: str | None, db: Session = Depends(get_db)):
-    """Create or update a setting.
+class LLMConfig(BaseModel):
+    """LLM provider configuration."""
+    llm_provider: str = Field(default="ollama", pattern="^(ollama|lmstudio|none)$")
+    llm_base_url: str = Field(default="http://localhost:11434")
+    llm_model: str = Field(default="llama3.2", min_length=1)
 
-    PUT /api/v1/settings/llm_provider -> 200 { "key": "llm_provider", "value": "ollama" }
-    """
-    setting = db.query(Setting).filter(Setting.key == key).first()
-    if setting:
-        setting.value = value
-    else:
-        setting = Setting(key=key, value=value)
-        db.add(setting)
-    db.commit()
-    db.refresh(setting)
-    return {"key": setting.key, "value": setting.value}
+
+class SettingsResponse(BaseModel):
+    """Full application settings response."""
+    app_name: Optional[str] = None
+    ha_host: Optional[str] = None
+    ha_port: Optional[int] = None
+    ha_ssl: Optional[bool] = None
+    llm_provider: Optional[str] = None
+    llm_base_url: Optional[str] = None
+    llm_model: Optional[str] = None
+    onboarded: bool = False
+
+
+class InitializeRequest(BaseModel):
+    """Request to initialize settings during onboarding."""
+    app_name: str = Field(default="HA Dashboard Builder")
+    ha_host: str = "localhost"
+    ha_port: int = 8123
+    ha_ssl: bool = False
+    ha_access_token: str = ""
+    llm_provider: str = "ollama"
+    llm_base_url: str = "http://localhost:11434"
+    llm_model: str = "llama3.2"
+
+
+# ─── Routes ────────────────────────────────────────────────────────
+
+@router.get("/settings", response_model=SettingsResponse)
+def get_settings(db: Session = Depends(get_db)):
+    """Get current application settings (HA token masked)."""
+    settings = db.query(SettingsModel).first()
+    if not settings:
+        return SettingsResponse(onboarded=False)
+
+    return SettingsResponse(
+        app_name=settings.app_name,
+        ha_host=settings.ha_host,
+        ha_port=settings.ha_port,
+        ha_ssl=settings.ha_ssl,
+        llm_provider=settings.llm_provider,
+        llm_base_url=settings.llm_base_url,
+        llm_model=settings.llm_model,
+        onboarded=settings.onboarded,
+    )
 
 
 @router.put("/settings")
-def upsert_multiple_settings(
-    settings: dict[str, str | None],
+def update_settings(
+    config: HAConnectionConfig | LLMConfig | dict,
     db: Session = Depends(get_db),
 ):
-    """Create or update multiple settings at once.
+    """Update application settings.
 
-    PUT /api/v1/settings -> 200 { "settings": { "key": "value", ... } }
+    Accepts partial updates — only provided fields are changed.
     """
-    for key, value in settings.items():
-        setting = db.query(Setting).filter(Setting.key == key).first()
-        if setting:
-            setting.value = value
-        else:
-            setting = Setting(key=key, value=value)
-            db.add(setting)
+    settings = db.query(SettingsModel).first()
+    if not settings:
+        raise HTTPException(status_code=404, detail="Settings not initialized")
+
+    update_data = config if isinstance(config, dict) else config.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        if hasattr(settings, key):
+            setattr(settings, key, value)
+
     db.commit()
+    db.refresh(settings)
 
-    all_settings = db.query(Setting).all()
-    return {"settings": {s.key: s.value for s in all_settings}}
-
-
-@router.delete("/settings/{key}")
-def delete_setting(key: str, db: Session = Depends(get_db)):
-    """Delete a setting.
-
-    DELETE /api/v1/settings/llm_provider -> 204 (no content)
-    """
-    setting = db.query(Setting).filter(Setting.key == key).first()
-    if not setting:
-        raise HTTPException(status_code=404, detail=f"Setting '{key}' not found")
-    db.delete(setting)
-    db.commit()
-    return None
-
-
-@router.post("/settings/reload")
-def reload_settings(db: Session = Depends(get_db)):
-    """Reload settings from database and update runtime configuration.
-
-    POST /api/v1/settings/reload -> 200 { "message": "Settings reloaded" }
-    """
-    from app.services.llm_service import set_llm_service, LLMService
-
-    # Read all settings from DB
-    db_settings = db.query(Setting).all()
-    settings_dict = {s.key: s.value for s in db_settings}
-
-    # Update LLM service if provider/model changed
-    llm_provider = settings_dict.get("llm_provider", "ollama")
-    llm_model = settings_dict.get("llm_model", "llama3.2")
-    llm_base_url = settings_dict.get(
-        "llm_base_url",
-        (
-            "http://localhost:11434"
-            if llm_provider == "ollama"
-            else "http://localhost:1234/v1"
-        ),
+    return SettingsResponse(
+        app_name=settings.app_name,
+        ha_host=settings.ha_host,
+        ha_port=settings.ha_port,
+        ha_ssl=settings.ha_ssl,
+        llm_provider=settings.llm_provider,
+        llm_base_url=settings.llm_base_url,
+        llm_model=settings.llm_model,
+        onboarded=settings.onboarded,
     )
 
-    try:
-        new_llm = LLMService(
-            provider=llm_provider,
-            model=llm_model,
-            base_url=llm_base_url,
-        )
-        set_llm_service(new_llm)
-    except Exception as e:
+
+@router.post("/settings/initialize", response_model=SettingsResponse)
+def initialize_settings(
+    request: InitializeRequest,
+    db: Session = Depends(get_db),
+):
+    """Initialize application settings during onboarding.
+
+    Creates or updates the app_settings record with all configuration values.
+    The HA access token is encrypted before storage.
+    """
+    settings = db.query(SettingsModel).first()
+
+    if settings and settings.onboarded:
         raise HTTPException(
-            status_code=500, detail=f"Failed to reload LLM settings: {e}"
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Settings already initialized. Use PUT /api/settings to update.",
         )
 
-    return {"message": "Settings reloaded successfully"}
+    if settings is None:
+        settings = SettingsModel()
+
+    settings.app_name = request.app_name
+    settings.ha_host = request.ha_host
+    settings.ha_port = request.ha_port
+    settings.ha_ssl = request.ha_ssl
+    settings.llm_provider = request.llm_provider
+    settings.llm_base_url = request.llm_base_url
+    settings.llm_model = request.llm_model
+
+    # Encrypt and store HA token
+    if request.ha_access_token:
+        from app.database import encrypt_token
+        settings.ha_access_token_encrypted = encrypt_token(request.ha_access_token)
+
+    db.commit()
+    db.refresh(settings)
+
+    return SettingsResponse(
+        app_name=settings.app_name,
+        ha_host=settings.ha_host,
+        ha_port=settings.ha_port,
+        ha_ssl=settings.ha_ssl,
+        llm_provider=settings.llm_provider,
+        llm_base_url=settings.llm_base_url,
+        llm_model=settings.llm_model,
+        onboarded=settings.onboarded,
+    )
+
+
+@router.get("/settings/onboarding-status")
+def get_onboarding_status(db: Session = Depends(get_db)):
+    """Check if onboarding has been completed."""
+    settings = db.query(SettingsModel).first()
+    return {"onboarded": bool(settings and settings.onboarded)}

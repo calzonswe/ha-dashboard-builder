@@ -1,6 +1,6 @@
 import { HAEntity, HAState, DashboardConfig, DashboardCard } from '../types/api'
 
-const API_BASE = '/api/v1'
+const API_BASE = '/api'
 
 async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem('auth_token')
@@ -14,11 +14,104 @@ async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
     headers: { ...headers, ...(options?.headers || {}) },
   })
 
+  if (response.status === 401) {
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('refresh_token')
+    window.location.href = '/login'
+    throw new Error('Session expired. Please log in again.')
+  }
+
   if (!response.ok) {
-    throw new Error(`API error: ${response.status} ${response.statusText}`)
+    const err = await response.json().catch(() => ({ detail: 'API error' }))
+    throw new Error(err.detail || `API error: ${response.status} ${response.statusText}`)
   }
 
   return response.json() as Promise<T>
+}
+
+// ─── Auth API ──────────────────────────────────────────────────────
+
+export async function login(username: string, password: string): Promise<{ access_token: string }> {
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Login failed' }))
+    throw new Error(err.detail || 'Login failed')
+  }
+  return res.json() as Promise<{ access_token: string }>
+}
+
+export async function register(username: string, password: string): Promise<{ access_token: string }> {
+  const res = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Registration failed' }))
+    throw new Error(err.detail || 'Registration failed')
+  }
+  return res.json() as Promise<{ access_token: string }>
+}
+
+export async function getCurrentUser(): Promise<{ username: string }> {
+  const token = localStorage.getItem('auth_token')
+  if (!token) throw new Error('Not authenticated')
+  const res = await fetch('/api/auth/me', {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error('Not authenticated')
+  return res.json() as Promise<{ username: string }>
+}
+
+// ─── Settings / Onboarding API ─────────────────────────────────────
+
+export interface OnboardingStatus {
+  onboarded: boolean
+}
+
+export async function getOnboardingStatus(): Promise<OnboardingStatus> {
+  const token = localStorage.getItem('auth_token') || ''
+  const res = await fetch('/api/settings/onboarding-status', {
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    credentials: 'same-origin',
+  })
+  if (!res.ok) return { onboarded: false }
+  return res.json() as Promise<OnboardingStatus>
+}
+
+export interface HAConnectionConfig {
+  ha_host: string
+  ha_port: number
+  ha_ssl: boolean
+}
+
+export interface LLMConfig {
+  llm_provider: string
+  llm_base_url: string
+  llm_model: string
+}
+
+export async function updateSettings(config: Partial<HAConnectionConfig & LLMConfig>): Promise<void> {
+  await fetchJSON('/api/settings', { method: 'PUT', body: JSON.stringify(config) })
+}
+
+export interface InitializeRequest {
+  app_name?: string
+  ha_host: string
+  ha_port: number
+  ha_ssl: boolean
+  ha_access_token: string
+  llm_provider: string
+  llm_base_url: string
+  llm_model: string
+}
+
+export async function initializeSettings(request: InitializeRequest): Promise<void> {
+  await fetchJSON('/api/settings/initialize', { method: 'POST', body: JSON.stringify(request) })
 }
 
 // ─── Home Assistant States / Entities ────────────────────────────────
@@ -114,9 +207,13 @@ export async function getDashboards(): Promise<DashboardConfig[]> {
 }
 
 export async function getHAStatus(): Promise<{ connected: boolean; host?: string; port?: number; entities?: number; error?: string }> {
-  const res = await fetch('/api/ha/status')
+  const token = localStorage.getItem('auth_token') || ''
+  const res = await fetch('/api/ha/status', {
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    credentials: 'same-origin',
+  })
   if (!res.ok) return { connected: false }
-  return res.json()
+  return res.json() as Promise<{ connected: boolean; host?: string; port?: number; entities?: number; error?: string }>
 }
 
 export async function getDashboard(id: string): Promise<DashboardConfig> {
@@ -179,7 +276,12 @@ export async function updateDashboard(id: string, config: { name?: string; descr
 }
 
 export async function deleteDashboard(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/dashboards/${id}`, { method: 'DELETE' })
+  const token = localStorage.getItem('auth_token') || ''
+  const response = await fetch(`${API_BASE}/dashboards/${id}`, {
+    method: 'DELETE',
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    credentials: 'same-origin',
+  })
   if (!response.ok) {
     throw new Error(`Delete failed: ${response.status} ${response.statusText}`)
   }

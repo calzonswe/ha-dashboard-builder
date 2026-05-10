@@ -42,9 +42,14 @@ export default function ClimateControlWidget({ widget, onDelete }: ClimateWidget
     const newTemp = Math.max(10, Math.min(35, targetTemp + delta))
 
     try {
+      const token = localStorage.getItem('auth_token') || ''
       await fetch('/api/ha/services/call', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'same-origin',
         body: JSON.stringify({
           domain: 'climate',
           service: 'set_temperature',
@@ -60,9 +65,14 @@ export default function ClimateControlWidget({ widget, onDelete }: ClimateWidget
     if (!widget.entity_id) return
 
     try {
+      const token = localStorage.getItem('auth_token') || ''
       await fetch('/api/ha/services/call', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'same-origin',
         body: JSON.stringify({
           domain: 'climate',
           service: 'set_hvac_mode',

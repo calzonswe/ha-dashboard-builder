@@ -51,10 +51,14 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const fetchSettings = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/v1/settings')
+      const token = localStorage.getItem('auth_token') || ''
+      const res = await fetch('/api/settings', {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        credentials: 'same-origin',
+      })
       if (res.ok) {
         const data = await res.json()
-        setSettings({ ...DEFAULT_SETTINGS, ...data.settings })
+        setSettings({ ...DEFAULT_SETTINGS, ha_port: String(data.ha_port || '8123'), ...data })
       }
     } catch (err) {
       console.error('Failed to fetch settings:', err)
@@ -67,19 +71,22 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setSaving(true)
     setMessage(null)
     try {
-      const res = await fetch('/api/v1/settings', {
+      const token = localStorage.getItem('auth_token') || ''
+      const res = await fetch('/api/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'same-origin',
         body: JSON.stringify(settings),
       })
       if (res.ok) {
-        // Reload settings to apply LLM provider changes at runtime
-        const reloadRes = await fetch('/api/v1/settings/reload', { method: 'POST' })
-        if (!reloadRes.ok) {
-          console.warn('Settings saved but reload failed:', await reloadRes.text())
-        }
         setMessage('Settings saved successfully!')
         setTimeout(() => setMessage(null), 3000)
+      } else {
+        const err = await res.json().catch(() => ({ detail: 'Save failed' }))
+        setMessage(err.detail || 'Failed to save settings')
       }
     } catch (err) {
       setMessage('Failed to save settings')

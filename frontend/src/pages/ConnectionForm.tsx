@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useToast } from '../hooks/useToast'
+import { useAuth } from '../hooks/useAuth'
 
 export default function ConnectionForm() {
   const { addToast } = useToast()
+  const { user } = useAuth()
   const [host, setHost] = useState('')
   const [port, setPort] = useState('8123')
   const [token, setToken] = useState('')
@@ -21,9 +23,14 @@ export default function ConnectionForm() {
     setMessage('Connecting...')
 
     try {
+      const token = localStorage.getItem('auth_token') || ''
       const res = await fetch('/api/ha/connect', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'same-origin',
         body: JSON.stringify({ host, port, token }),
       })
 

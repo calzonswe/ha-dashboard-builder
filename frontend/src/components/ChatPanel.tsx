@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useEntities } from '../hooks/useEntities'
+import { useAuth } from '../hooks/useAuth'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -19,6 +20,7 @@ export default function ChatPanel({ selectedCards = [], dashboardName }: ChatPan
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { entities } = useEntities()
+  const { user } = useAuth()
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -52,9 +54,14 @@ export default function ChatPanel({ selectedCards = [], dashboardName }: ChatPan
         { role: 'user' as const, content: userMessage },
       ]
 
+      const token = localStorage.getItem('auth_token') || ''
       const res = await fetch('/api/chat/stream', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'same-origin',
         body: JSON.stringify({
           messages: apiMessages,
           context,

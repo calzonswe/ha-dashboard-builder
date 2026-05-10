@@ -36,9 +36,14 @@ export default function LightToggleWidget({ widget, onDelete }: { widget: Widget
 
     setIsToggling(true)
     try {
+      const token = localStorage.getItem('auth_token') || ''
       await fetch('/api/ha/services/call', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'same-origin',
         body: JSON.stringify({
           domain: 'light',
           service: state === 'on' ? 'turn_off' : 'turn_on',
@@ -63,9 +68,14 @@ export default function LightToggleWidget({ widget, onDelete }: { widget: Widget
 
     setIsAdjusting(true)
     try {
+      const token = localStorage.getItem('auth_token') || ''
       await fetch('/api/ha/services/call', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'same-origin',
         body: JSON.stringify({
           domain: 'light',
           service: 'turn_on',

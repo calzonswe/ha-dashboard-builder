@@ -32,9 +32,14 @@ export default function EditDashboardModal({
 
     setLoading(true)
     try {
-      await fetch(`/api/v1/dashboards/${dashboardId}`, {
+      const token = localStorage.getItem('auth_token') || ''
+      await fetch(`/api/dashboards/${dashboardId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'same-origin',
         body: JSON.stringify({ name: name.trim(), description: description.trim() || null }),
       })
       addToast('Dashboard updated successfully!', 'success')
