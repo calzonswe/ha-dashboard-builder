@@ -245,7 +245,7 @@ class ServiceCallResponse(BaseModel):
         description="Human-readable description of the service call result",
         examples=["Service light/turn_on called successfully"],
     )
-    result: Optional[Dict[str, Any]] = Field(
+    result: Any = Field(
         None,
         description="Result data returned by the Home Assistant service (if any)",
     )

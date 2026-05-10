@@ -165,7 +165,7 @@ app.add_middleware(
 )
 
 # Include API routers
-app.include_router(auth_router, prefix="")  # Auth routes at root level
+app.include_router(auth_router, prefix="/api")  # Auth routes under /api
 app.include_router(ha_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(settings_router, prefix="/api/v1")

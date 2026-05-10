@@ -1,10 +1,8 @@
 import { useState } from 'react'
 import { useToast } from '../hooks/useToast'
-import { useAuth } from '../hooks/useAuth'
 
 export default function ConnectionForm() {
   const { addToast } = useToast()
-  const { user } = useAuth()
   const [host, setHost] = useState('')
   const [port, setPort] = useState('8123')
   const [token, setToken] = useState('')

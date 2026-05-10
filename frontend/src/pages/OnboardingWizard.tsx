@@ -1,14 +1,13 @@
 import React, { useState } from 'react'
-import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
-import { initializeSettings, login } from '../services/api'
+import { initializeSettings } from '../services/api'
 
 type Step = 'welcome' | 'ha-connection' | 'llm-config' | 'summary'
 
 const OnboardingWizard: React.FC = () => {
   const [step, setStep] = useState<Step>('welcome')
   const [loading, setLoading] = useState(false)
-  const toast = useToast()
+  const { addToast } = useToast()
 
   // HA connection state
   const [haHost, setHaHost] = useState('localhost')
@@ -23,8 +22,6 @@ const OnboardingWizard: React.FC = () => {
 
   // App name
   const [appName] = useState('HA Dashboard Builder')
-
-  const { login: authLogin } = useAuth()
 
   const handleNext = async () => {
     if (step === 'welcome') {
@@ -62,17 +59,17 @@ const OnboardingWizard: React.FC = () => {
       })
 
       if (res.ok) {
-        toast.success('Setup complete! Redirecting to dashboard...')
+        addToast('Setup complete! Redirecting to dashboard...', 'success')
         window.location.href = '/'
       } else {
         const err = await res.json().catch(() => ({ detail: 'Connection failed' }))
-        toast.error(err.detail || 'HA connection failed. You can configure it later.')
+        addToast(err.detail || 'HA connection failed. You can configure it later.', 'error')
         // Still mark as onboarded and redirect
         window.location.href = '/'
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Setup failed'
-      toast.error(message)
+      addToast(message, 'error')
       setLoading(false)
     }
   }
@@ -83,7 +80,7 @@ const OnboardingWizard: React.FC = () => {
         {/* Progress bar */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2">
-            {['welcome', 'ha-connection', 'llm-config', 'summary'].map((s, i) => (
+            {['welcome', 'ha-connection', 'llm-config', 'summary'].map((s) => (
               <div key={s} className={`h-2 flex-1 rounded-full transition-all ${step === s ? 'bg-blue-600' : step > s ? 'bg-green-500' : 'bg-gray-300'}`} />
             ))}
           </div>

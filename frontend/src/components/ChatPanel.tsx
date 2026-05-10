@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
 import { useEntities } from '../hooks/useEntities'
-import { useAuth } from '../hooks/useAuth'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -20,7 +19,6 @@ export default function ChatPanel({ selectedCards = [], dashboardName }: ChatPan
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { entities } = useEntities()
-  const { user } = useAuth()
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })

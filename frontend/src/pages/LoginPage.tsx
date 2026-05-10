@@ -8,7 +8,7 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const { login, register } = useAuth()
-  const toast = useToast()
+  const { addToast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -17,15 +17,15 @@ const LoginPage: React.FC = () => {
     try {
       if (isRegister) {
         await register(username.trim(), password)
-        toast.success('Account created! Welcome to HA Dashboard Builder.')
+        addToast('Account created! Welcome to HA Dashboard Builder.', 'success')
       } else {
         await login(username.trim(), password)
-        toast.success('Logged in successfully.')
+        addToast('Logged in successfully.', 'success')
       }
       window.location.href = '/'
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Something went wrong'
-      toast.error(message)
+      addToast(message, 'error')
     } finally {
       setLoading(false)
     }

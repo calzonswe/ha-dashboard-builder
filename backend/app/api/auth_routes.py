@@ -21,7 +21,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
 # Generate JWT secret from env or use a deterministic default for dev
 _jwt_secret = os.environ.get("JWT_SECRET", "dev-secret-change-in-production")
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+_pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 
 def _verify_password(plain: str, hashed: str) -> bool:
