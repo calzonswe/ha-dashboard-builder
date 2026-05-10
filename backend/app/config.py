@@ -16,12 +16,13 @@ class Settings(BaseSettings):
 
     # Application settings
     APP_NAME: str = "HA Dashboard Builder"
-    DEBUG: bool = True
+    DEBUG: bool = False
     DATABASE_URL: str = "sqlite:///./ha_dashboard.db"
 
     # Home Assistant connection
     HA_HOST: str = "localhost"
     HA_PORT: int = 8123
+    HA_SSL: bool = False
     HA_ACCESS_TOKEN: str = ""
 
     # WebSocket poll interval (seconds)

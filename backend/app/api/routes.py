@@ -45,11 +45,13 @@ def get_entity_service() -> EntityDiscoveryService:
     return _entity_service
 
 
-def set_ha_connection(host: str, port: int, token: str):
+def set_ha_connection(host: str, port: int, token: str, ssl: bool = True):
     """Set the global HA client and entity service."""
     global _ha_client, _entity_service
 
-    _ha_client = HAAPI(host=host, port=port, token=token)
+    _ha_client = HAAPI(
+        host=host, port=port, token=token, ssl=ssl
+    )
     _entity_service = EntityDiscoveryService(ha_client=_ha_client)
 
 
@@ -69,7 +71,7 @@ def set_ha_connection(host: str, port: int, token: str):
 )
 async def connect_to_ha(request: HAConnectionRequest):
     try:
-        set_ha_connection(host=request.host, port=request.port, token=request.token)
+        set_ha_connection(host=request.host, port=request.port, token=request.token, ssl=request.ssl)
 
         client = get_ha_client()
         info = await asyncio.to_thread(client.test_connection)

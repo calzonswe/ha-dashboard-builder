@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
 from app.services.llm_service import get_llm_service
+from app.services.system_prompt import get_system_prompt
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -45,16 +46,11 @@ async def generate_chat_stream(
     """Generate streaming chat response using SSE."""
     llm = get_llm_service()
 
-    # Inject context as system message if provided
-    if context:
-        context_str = _format_context(context)
-        messages.insert(
-            0,
-            {
-                "role": "system",
-                "content": f"You are a helpful assistant for a Home Assistant dashboard builder. {context_str}",
-            },
-        )
+    system_prompt = get_system_prompt(context)
+    messages.insert(
+        0,
+        {"role": "system", "content": system_prompt},
+    )
 
     try:
         # For streaming, we'll collect chunks and yield them
@@ -87,19 +83,10 @@ async def send_chat_message(request: ChatRequest) -> ChatResponse:
     llm = get_llm_service()
 
     try:
-        # Convert Pydantic models to dicts for the LLM service
         messages = [msg.model_dump() for msg in request.messages]
 
-        # Inject context as system message if provided
-        if request.context:
-            context_str = _format_context(request.context)
-            messages.insert(
-                0,
-                {
-                    "role": "system",
-                    "content": f"You are a helpful assistant for a Home Assistant dashboard builder. {context_str}",
-                },
-            )
+        system_prompt = get_system_prompt(request.context)
+        messages.insert(0, {"role": "system", "content": system_prompt})
 
         response = await llm.chat(messages, request.model)
 

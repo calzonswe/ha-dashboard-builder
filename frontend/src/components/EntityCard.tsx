@@ -55,11 +55,20 @@ const EntityCard: React.FC<EntityCardProps> = ({ card, entityState, onConfigure 
     zIndex: isDragging ? 1000 : 1,
   }
 
+  const isUnavailable = !entityState || entityState === 'unavailable' || entityState === 'unknown'
+  const isOff = entityState === 'off'
+
+  const getStateColorClass = () => {
+    if (isUnavailable) return 'bg-gray-100 border-gray-400 text-gray-500'
+    if (isOff) return 'bg-gray-100 border-gray-300 text-gray-500'
+    return colors.border
+  }
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative rounded-lg border-2 ${colors.border} ${colors.bg} shadow-md hover:shadow-xl transition-all duration-200 cursor-grab active:cursor-grabbing`}
+      className={`relative rounded-lg border-2 ${getStateColorClass()} ${isUnavailable || isOff ? 'opacity-75' : colors.bg} shadow-md hover:shadow-xl transition-all duration-200 cursor-grab active:cursor-grabbing`}
       data-entity-id={card.entity_id}
     >
       {/* Drag handle */}
@@ -82,10 +91,20 @@ const EntityCard: React.FC<EntityCardProps> = ({ card, entityState, onConfigure 
           <h3 className="font-medium text-sm truncate flex-1" title={card.entity_id}>
             {card.config?.title || card.entity_id.split('.').slice(1).join('.')}
           </h3>
+          {isUnavailable && (
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-500 flex-shrink-0">
+              Unavailable
+            </span>
+          )}
+          {isOff && !isUnavailable && (
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-500 flex-shrink-0">
+              Off
+            </span>
+          )}
         </div>
 
         {/* State display */}
-        <div className={`text-lg font-semibold ${colors.text}`}>
+        <div className={`text-lg font-semibold ${isUnavailable || isOff ? 'text-gray-400' : colors.text}`}>
           {entityState !== undefined ? entityState : '—'}
         </div>
 

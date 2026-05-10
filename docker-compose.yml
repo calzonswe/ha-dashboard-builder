@@ -16,6 +16,8 @@ services:
     container_name: ha-dashboard-api
     ports:
       - "8000:8000"
+    env_file:
+      - ./backend/.env
     environment:
       # Home Assistant connection (set in .env file)
       - HA_HOST=${HA_HOST:-localhost}

@@ -31,6 +31,14 @@ class HAConnectionRequest(BaseModel):
         ),
         examples=["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."],
     )
+    ssl: bool = Field(
+        default=True,
+        description=(
+            "Whether to use HTTPS/SSL when connecting to Home Assistant. "
+            "Set to False for HTTP-only instances (e.g., localhost or self-signed certs)."
+        ),
+        examples=[True],
+    )
 
 
 class HAConnectionResponse(BaseModel):

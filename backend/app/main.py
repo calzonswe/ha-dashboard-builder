@@ -37,6 +37,7 @@ async def lifespan(app: FastAPI):
             host=settings.HA_HOST,
             port=settings.HA_PORT,
             token=settings.HA_ACCESS_TOKEN,
+            ssl=settings.HA_SSL,
         )
         discovery_service = EntityDiscoveryService(ha_client=ha_client)
 

@@ -11,21 +11,7 @@
     <title>HA Dashboard Builder</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">Loading...</div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      // Register service worker for PWA support
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('SW registered: ', registration.scope)
-            })
-            .catch((registrationError) => {
-              console.warn('SW registration failed: ', registrationError)
-            })
-        })
-      }
-    </script>
   </body>
 </html>

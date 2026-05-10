@@ -6,7 +6,12 @@ import { ToastProvider } from './hooks/useToast'
 import { EntityStateProvider } from './hooks/useWebSocket'
 import './index.css'
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const rootEl = document.getElementById('root')
+if (!rootEl) {
+  throw new Error('root element not found')
+}
+
+ReactDOM.createRoot(rootEl).render(
   <React.StrictMode>
     <BrowserRouter>
       <ToastProvider>
