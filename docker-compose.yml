@@ -1,8 +1,8 @@
 # ---------------------------------------------------------------------------
-# Docker Compose for HA Dashboard Builder
+# Docker Compose for HA Dashboard Builder (Production)
 # ---------------------------------------------------------------------------
-# Spins up both backend (FastAPI) and frontend (React + Nginx) with a single
-# command:  docker compose up --build -d
+# Spins up: PostgreSQL, Backend (FastAPI), Frontend (React + Nginx)
+# Run with: docker compose up --build -d
 #
 # Access points:
 #   Frontend UI : http://localhost:3000
@@ -10,6 +10,23 @@
 # ---------------------------------------------------------------------------
 
 services:
+  # ─── PostgreSQL Database ───────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: ha-dashboard-db
+    environment:
+      POSTGRES_DB: ha_dashboard
+      POSTGRES_USER: hadb_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change-me-in-production}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hadb_user -d ha_dashboard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # ─── Backend (FastAPI) ──────────────────────────────────────────────
   ha-dashboard-api:
     build: .
@@ -17,27 +34,25 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ./backend/.env
+      - .env
     environment:
-      # Home Assistant connection (set in .env file)
+      - DATABASE_URL=postgresql://hadb_user:${DB_PASSWORD:-change-me-in-production}@postgres:5432/ha_dashboard
       - HA_HOST=${HA_HOST:-localhost}
       - HA_PORT=${HA_PORT:-8123}
       - HA_ACCESS_TOKEN=${HA_ACCESS_TOKEN}
-
-      # WebSocket poll interval (seconds)
       - WS_POLL_INTERVAL=${WS_POLL_INTERVAL:-5.0}
-
+      - JWT_SECRET=${JWT_SECRET:-change-jwt-secret-in-production}
+      - SETTINGS_ENCRYPTION_KEY=${SETTINGS_ENCRYPTION_KEY:-}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
-
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 5s
       retries: 3
-
-    volumes:
-      # Persist dashboard DB across container restarts
-      - ha-dashboard-data:/app/data
 
   # ─── Frontend (React + Nginx) ───────────────────────────────────────
   ha-dashboard-frontend:
@@ -47,9 +62,9 @@ services:
     container_name: ha-dashboard-frontend
     ports:
       - "3000:80"
-    # Frontend depends on backend being available for API proxying
     depends_on:
       - ha-dashboard-api
+    restart: unless-stopped
 
 volumes:
-  ha-dashboard-data:
+  postgres_data:
